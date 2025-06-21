@@ -1,28 +1,23 @@
 export interface Game {
-  id: number; // or number, depending on your backend
+  id: number;
   title: string;
   description: string;
   price: number;
   discountPercentage: number;
   thumbnail: {
-    url: string;
+    formats?: {
+      thumbnail?: { url: string };
+      url?: string;
+    };
+    url?: string;
     name: string;
   };
-  images: {
-    url: string;
-    name: string;
-  }[];
+  images?: { url: string; name: string }[] | null;
   developer: string;
   platform: string;
   rating: number;
-  releaseDate: string; // ISO date string
+  releaseDate: string;
   stock: number;
-  videoTrailer: {
-    url: string;
-    name: string;
-  };
-  genres: {
-    id: string;
-    name: string;
-  }[];
+  videoTrailer?: { url: string; name: string } | null;
+  genres: { id: string; title: string }[];
 }
