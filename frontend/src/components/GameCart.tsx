@@ -1,22 +1,24 @@
+import React from "react";
 import {
-  Badge,
   Box,
-  Button,
-  Card,
-  HStack,
   Image,
   Text,
+  HStack,
+  Badge,
+  Button,
+  Card,
+  CardBody,
 } from "@chakra-ui/react";
-import { ShoppingCartIcon, StarIcon } from "lucide-react";
+import { StarIcon, ShoppingCartIcon } from "lucide-react";
+import type { Game } from "../types";
 
-type Size = "small" | "medium" | "large";
-
-interface GameCartProps {
-  size?: Size;
+interface GameCardProps {
+  game: Game;
+  size?: "small" | "medium" | "large";
 }
 
-const GameCart = ({ size = "medium" }: GameCartProps) => {
-  const heights: Record<Size, string> = {
+const GameCard: React.FC<GameCardProps> = ({ game, size = "medium" }) => {
+  const heights = {
     small: "128px",
     medium: "192px",
     large: "256px",
@@ -35,41 +37,43 @@ const GameCart = ({ size = "medium" }: GameCartProps) => {
 
   return (
     <Card.Root
-      maxW="sm"
-      overflow="hidden"
-      margin={4}
       cursor="pointer"
       borderRadius="xl"
+      overflow="hidden"
       _hover={{
         transform: "scale(1.05)",
         boxShadow: "0 0 30px rgba(34, 211, 238, 0.3)",
       }}
       transition="all 0.3s"
+      className="gaming-card"
     >
       <Box position="relative">
         <Image
-          src="https://images.unsplash.com/photo-1555041469-a586c61ea9bc?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1770&q=80"
-          alt="Green double couch with wooden legs"
+          src={game.thumbnail.url}
+          alt={game.thumbnail.name}
           h={heights[size]}
           w="100%"
           objectFit="cover"
           _hover={{ transform: "scale(1.1)" }}
           transition="transform 0.3s"
         />
-        <Badge
-          position="absolute"
-          top={2}
-          left={2}
-          bgGradient="linear(to-r, secondary.500, accent.500)"
-          color="white"
-          px={2}
-          py={1}
-          borderRadius="lg"
-          fontSize="sm"
-          fontWeight="bold"
-        >
-          -20%
-        </Badge>
+        {game.discountPercentage > 0 && (
+          <Badge
+            position="absolute"
+            top={2}
+            left={2}
+            bgGradient="linear(to-r, secondary.500, accent.500)"
+            className="gaming-btn-secondary"
+            px={2}
+            py={1}
+            borderRadius="lg"
+            fontSize="sm"
+            fontWeight="bold"
+            transition="transform 0.3s"
+          >
+            -{game.discountPercentage}%
+          </Badge>
+        )}
         <Badge
           position="absolute"
           top={2}
@@ -82,38 +86,60 @@ const GameCart = ({ size = "medium" }: GameCartProps) => {
           fontSize="xs"
           backdropFilter="blur(4px)"
         >
-          Free Shipping
+          {game.genres.map((genre) => genre.name).join(", ")}
         </Badge>
       </Box>
-      <Card.Body gap="2">
-        <Card.Title color={"primary.600"}>Living room Sofa</Card.Title>
+
+      <CardBody>
+        <Text
+          fontSize="lg"
+          fontWeight="bold"
+          color="white"
+          mb={2}
+          _hover={{ color: "var(--primary-400)" }}
+          transition="colors 0.2s"
+          truncate
+        >
+          {game.title}
+        </Text>
+
         <HStack mb={3} gap={1}>
-          {renderStars(4.5)}
+          {renderStars(game.rating)}
           <Text color="gray.400" fontSize="sm" ml={2}>
-            (4.5)
+            ({game.rating.toFixed(1)} / 5)
           </Text>
         </HStack>
+
         <HStack justifyContent="space-between" alignItems="center">
           <HStack gap={2}>
-            <Text fontSize="xl" fontWeight="bold" color="primary.400">
-              $299.99
+            <Text fontSize="xl" fontWeight="bold" color="var(--primary-500)">
+              ${game.price.toFixed(2)}
             </Text>
-            <Text color="gray.400" textDecoration="line-through" fontSize="sm">
-              $399.99
-            </Text>
+            {game.discountPercentage > 0 && (
+              <Text
+                color="gray.400"
+                textDecoration="line-through"
+                fontSize="sm"
+              >
+                ${(game.price * (1 + game.discountPercentage / 100)).toFixed(2)}
+              </Text>
+            )}
           </HStack>
           <Button
-            variant="ghost"
             size="sm"
             _hover={{ transform: "scale(1.05)" }}
+            display="flex"
+            alignItems="center"
+            gap={2}
+            className="gaming-btn-secondary"
           >
-            <ShoppingCartIcon size={16} style={{ marginRight: 8 }} />
+            <ShoppingCartIcon size={16} />
             Add
           </Button>
         </HStack>
-      </Card.Body>
+      </CardBody>
     </Card.Root>
   );
 };
 
-export default GameCart;
+export default GameCard;
