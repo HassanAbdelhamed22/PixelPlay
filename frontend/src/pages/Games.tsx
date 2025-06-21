@@ -391,13 +391,11 @@ const GamesPage: React.FC = () => {
 
         {/* Games Grid */}
         <Grid
-          templateColumns={{
-            base: "1fr",
-            sm: viewMode === "grid" ? "repeat(1, 1fr)" : "1fr",
-            md: viewMode === "grid" ? "repeat(2, 1fr)" : "1fr",
-            lg: viewMode === "grid" ? "repeat(3, 1fr)" : "1fr",
-            xl: viewMode === "grid" ? "repeat(4, 1fr)" : "1fr",
-          }}
+          templateColumns={
+            viewMode === "grid"
+              ? "repeat(auto-fill, minmax(250px, 1fr))"
+              : "1fr"
+          }
           gap={6}
           mb={12}
         >
