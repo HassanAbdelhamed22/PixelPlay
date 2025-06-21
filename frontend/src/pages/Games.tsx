@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState, Component } from "react";
 import {
   Box,
   Container,
@@ -18,194 +18,94 @@ import { Select, createListCollection } from "@chakra-ui/react";
 import { SearchIcon, FilterIcon, GridIcon, ListIcon } from "lucide-react";
 import type { Game } from "../types";
 import GameCard from "../components/GameCart";
+import axios from "axios";
+
+class ErrorBoundary extends Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <Text color="red.500">Error in Select component</Text>;
+    }
+    return this.props.children;
+  }
+}
 
 const GamesPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [sortBy, setSortBy] = useState("popular");
   const [filterGenre, setFilterGenre] = useState("all");
+  const [games, setGames] = useState<Game[]>([]);
 
-  const games: Game[] = [
-    {
-      id: 1,
-      title: "Cyber Nexus 2077",
-      description:
-        "Experience the ultimate cyberpunk adventure in a dystopian future.",
-      price: 59.99,
-      discountPercentage: 25,
-      thumbnail: {
-        url: "https://images.pexels.com/photos/442576/pexels-photo-442576.jpeg?auto=compress&cs=tinysrgb&w=400",
-        name: "Cyber Nexus 2077 Thumbnail",
-      },
-      images: [
-        {
-          url: "https://images.pexels.com/photos/442576/pexels-photo-442576.jpeg?auto=compress&cs=tinysrgb&w=400",
-          name: "Cyber Nexus 2077 Screenshot 1",
-        },
-      ],
-      developer: "CyberStudio",
-      platform: "PC",
-      rating: 4.8,
-      releaseDate: "2024-12-01",
-      stock: 100,
-      videoTrailer: {
-        url: "https://www.youtube.com/watch?v=trailer1",
-        name: "Cyber Nexus 2077 Trailer",
-      },
-      genres: [{ id: "1", name: "Action RPG" }],
+  const mapGameData = (data: any): Game => ({
+    id: data.id || data.documentId,
+    title: data.title || "Untitled",
+    description: data.description || "",
+    price: data.price || 0,
+    discountPercentage: data.discountPercentage || 0,
+    thumbnail: {
+      formats: data.thumbnail?.formats,
+      url: data.thumbnail?.url || "/placeholder.jpg",
+      name: data.thumbnail?.name || "Thumbnail",
     },
-    {
-      id: 2,
-      title: "Neon Racing Elite",
-      description: "High-speed racing in neon-lit futuristic cities.",
-      price: 39.99,
-      discountPercentage: 20,
-      thumbnail: {
-        url: "https://images.pexels.com/photos/735911/pexels-photo-735911.jpeg?auto=compress&cs=tinysrgb&w=400",
-        name: "Neon Racing Elite Thumbnail",
-      },
-      images: [
-        {
-          url: "https://images.pexels.com/photos/735911/pexels-photo-735911.jpeg?auto=compress&cs=tinysrgb&w=400",
-          name: "Neon Racing Elite Screenshot 1",
-        },
-      ],
-      developer: "SpeedWorks",
-      platform: "PC",
-      rating: 4.6,
-      releaseDate: "2024-11-15",
-      stock: 100,
-      videoTrailer: {
-        url: "https://www.youtube.com/watch?v=trailer2",
-        name: "Neon Racing Elite Trailer",
-      },
-      genres: [{ id: "2", name: "Racing" }],
-    },
-    {
-      id: 3,
-      title: "Pixel Warriors",
-      description:
-        "Classic pixel art platformer with modern gameplay mechanics.",
-      price: 29.99,
-      discountPercentage: 0,
-      thumbnail: {
-        url: "https://images.pexels.com/photos/1174732/pexels-photo-1174732.jpeg?auto=compress&cs=tinysrgb&w=400",
-        name: "Pixel Warriors Thumbnail",
-      },
-      images: [
-        {
-          url: "https://images.pexels.com/photos/1174732/pexels-photo-1174732.jpeg?auto=compress&cs=tinysrgb&w=400",
-          name: "Pixel Warriors Screenshot 1",
-        },
-      ],
-      developer: "PixelCraft",
-      platform: "PC",
-      rating: 4.9,
-      releaseDate: "2024-10-20",
-      stock: 100,
-      videoTrailer: {
-        url: "https://www.youtube.com/watch?v=trailer3",
-        name: "Pixel Warriors Trailer",
-      },
-      genres: [{ id: "3", name: "Platformer" }],
-    },
-    {
-      id: 4,
-      title: "Space Odyssey VR",
-      description: "Immersive VR space exploration experience.",
-      price: 49.99,
-      discountPercentage: 30,
-      thumbnail: {
-        url: "https://images.pexels.com/photos/586063/pexels-photo-586063.jpeg?auto=compress&cs=tinysrgb&w=400",
-        name: "Space Odyssey VR Thumbnail",
-      },
-      images: [
-        {
-          url: "https://images.pexels.com/photos/586063/pexels-photo-586063.jpeg?auto=compress&cs=tinysrgb&w=400",
-          name: "Space Odyssey VR Screenshot 1",
-        },
-      ],
-      developer: "VR Studios",
-      platform: "PC",
-      rating: 4.7,
-      releaseDate: "2024-09-10",
-      stock: 100,
-      videoTrailer: {
-        url: "https://www.youtube.com/watch?v=trailer4",
-        name: "Space Odyssey VR Trailer",
-      },
-      genres: [{ id: "4", name: "VR Adventure" }],
-    },
-    {
-      id: 5,
-      title: "Mystic Realms",
-      description: "Embark on an epic fantasy adventure in mystical realms.",
-      price: 44.99,
-      discountPercentage: 0,
-      thumbnail: {
-        url: "https://images.pexels.com/photos/1174732/pexels-photo-1174732.jpeg?auto=compress&cs=tinysrgb&w=400",
-        name: "Mystic Realms Thumbnail",
-      },
-      images: [
-        {
-          url: "https://images.pexels.com/photos/1174732/pexels-photo-1174732.jpeg?auto=compress&cs=tinysrgb&w=400",
-          name: "Mystic Realms Screenshot 1",
-        },
-      ],
-      developer: "MysticGames",
-      platform: "PC",
-      rating: 4.5,
-      releaseDate: "2024-08-25",
-      stock: 100,
-      videoTrailer: {
-        url: "https://www.youtube.com/watch?v=trailer5",
-        name: "Mystic Realms Trailer",
-      },
-      genres: [{ id: "5", name: "Fantasy RPG" }],
-    },
-    {
-      id: 6,
-      title: "Quantum Strike",
-      description: "Fast-paced multiplayer shooter with quantum mechanics.",
-      price: 34.99,
-      discountPercentage: 15,
-      thumbnail: {
-        url: "https://images.pexels.com/photos/442576/pexels-photo-442576.jpeg?auto=compress&cs=tinysrgb&w=400",
-        name: "Quantum Strike Thumbnail",
-      },
-      images: [
-        {
-          url: "https://images.pexels.com/photos/442576/pexels-photo-442576.jpeg?auto=compress&cs=tinysrgb&w=400",
-          name: "Quantum Strike Screenshot 1",
-        },
-      ],
-      developer: "QuantumStudio",
-      platform: "PC",
-      rating: 4.4,
-      releaseDate: "2024-07-12",
-      stock: 100,
-      videoTrailer: {
-        url: "https://www.youtube.com/watch?v=trailer6",
-        name: "Quantum Strike Trailer",
-      },
-      genres: [{ id: "6", name: "FPS" }],
-    },
-  ];
+    images: data.images || [],
+    developer: data.developer || "Unknown",
+    platform: data.platform || "Unknown",
+    rating: data.rating || 0,
+    releaseDate: data.releaseDate || new Date().toISOString(),
+    stock: data.stock || 0,
+    videoTrailer: data.videoTrailer || { url: "", name: "" },
+    genres: data.genres || [],
+  });
 
-  const genres = [
-    "all",
-    "Action RPG",
-    "Racing",
-    "Platformer",
-    "VR Adventure",
-    "Fantasy RPG",
-    "FPS",
-  ];
+  useEffect(() => {
+    axios
+      .get(
+        "http://localhost:1337/api/games?populate[thumbnail]=true&populate[images]=true&populate[genres]=true"
+      )
+      .then((response) => {
+        const mappedGames = response.data.data.map(mapGameData);
+        setGames(mappedGames);
+        console.log("Mapped games data:", mappedGames);
+      })
+      .catch((error) => {
+        console.error("Error fetching games data:", error);
+      });
+  }, []);
+
+  const allGenres = Array.from(
+    new Set(
+      games
+        .flatMap((game) =>
+          game.genres
+            ? game.genres
+                .map((genre) => genre.title)
+                .filter(
+                  (name) => typeof name === "string" && name.trim() !== ""
+                )
+            : []
+        )
+        .filter(Boolean)
+    )
+  );
 
   const genresFrameworks = createListCollection({
-    items: genres.map((genre) => ({
-      value: genre,
-      label: genre === "all" ? "All Genres" : genre,
-    })),
+    items: [
+      { value: "all", label: "All Genres" },
+      ...(allGenres.length > 0
+        ? allGenres.map((genre) => ({
+            value: genre,
+            label: genre,
+          }))
+        : []),
+    ],
   });
 
   const sortOptions = createListCollection({
@@ -221,13 +121,24 @@ const GamesPage: React.FC = () => {
   const filteredGames = games.filter(
     (game) =>
       filterGenre === "all" ||
-      game.genres.some((genre) => genre.name === filterGenre)
+      game.genres.some((genre) => genre.title === filterGenre)
   );
+
+  const sortedGames = [...filteredGames].sort((a, b) => {
+    if (sortBy === "popular") return b.rating - a.rating;
+    if (sortBy === "newest")
+      return (
+        new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime()
+      );
+    if (sortBy === "price-low") return a.price - b.price;
+    if (sortBy === "price-high") return b.price - a.price;
+    if (sortBy === "rating") return b.rating - a.rating;
+    return 0;
+  });
 
   return (
     <Box minH="100vh" py={8}>
       <Container maxW="7xl">
-        {/* Header */}
         <VStack align="start" gap={4} mb={8}>
           <Text fontSize="4xl" fontWeight="bold">
             <Text as="span" className="gaming-title">
@@ -237,7 +148,6 @@ const GamesPage: React.FC = () => {
           <Text color="gray.400">Discover your next gaming adventure</Text>
         </VStack>
 
-        {/* Search and Filters */}
         <Card.Root
           mb={8}
           bg="var(--dark-900)"
@@ -255,7 +165,6 @@ const GamesPage: React.FC = () => {
           <CardBody>
             <VStack gap={4} align="stretch">
               <HStack gap={4} flexWrap="wrap">
-                {/* Search */}
                 <InputGroup
                   flex={1}
                   maxW="md"
@@ -276,21 +185,65 @@ const GamesPage: React.FC = () => {
                   />
                 </InputGroup>
 
-                {/* Filters */}
                 <HStack gap={4}>
                   <HStack gap={2}>
                     <FilterIcon size={20} color="gray" />
+                    <ErrorBoundary>
+                      <Select.Root
+                        collection={genresFrameworks}
+                        size="sm"
+                        value={[filterGenre]}
+                        onValueChange={({ value }) =>
+                          setFilterGenre(value[0] || "all")
+                        }
+                        minW="150px"
+                        bg="var(--dark-800)"
+                        border="1px solid"
+                        borderColor="var(--dark-700)"
+                        _focus={{
+                          borderColor: "var(--primary-400)",
+                          boxShadow:
+                            "0 0 0 1px var(--chakra-colors-primary-400)",
+                        }}
+                        transition={"border-color 0.2s, box-shadow 0.2s"}
+                      >
+                        <Select.HiddenSelect />
+                        <Select.Control>
+                          <Select.Trigger>
+                            <Select.ValueText placeholder="Select genre" />
+                          </Select.Trigger>
+                          <Select.IndicatorGroup>
+                            <Select.Indicator />
+                          </Select.IndicatorGroup>
+                        </Select.Control>
+                        <Portal>
+                          <Select.Positioner>
+                            <Select.Content>
+                              {genresFrameworks.items.map((item) => (
+                                <Select.Item item={item} key={item.value}>
+                                  {item.label}
+                                  <Select.ItemIndicator />
+                                </Select.Item>
+                              ))}
+                            </Select.Content>
+                          </Select.Positioner>
+                        </Portal>
+                      </Select.Root>
+                    </ErrorBoundary>
+                  </HStack>
+
+                  <ErrorBoundary>
                     <Select.Root
-                      collection={genresFrameworks}
+                      collection={sortOptions}
                       size="sm"
-                      value={[filterGenre]}
+                      value={[sortBy]}
                       onValueChange={({ value }) =>
-                        setFilterGenre(value[0] || "all")
+                        setSortBy(value[0] || "popular")
                       }
                       minW="150px"
                       bg="var(--dark-800)"
                       border="1px solid"
-                      borderColor="var(--dark-700)"
+                      borderColor="var(--dark-600)"
                       _focus={{
                         borderColor: "var(--primary-400)",
                         boxShadow: "0 0 0 1px var(--chakra-colors-primary-400)",
@@ -300,7 +253,7 @@ const GamesPage: React.FC = () => {
                       <Select.HiddenSelect />
                       <Select.Control>
                         <Select.Trigger>
-                          <Select.ValueText placeholder="Select genre" />
+                          <Select.ValueText placeholder="Select sort option" />
                         </Select.Trigger>
                         <Select.IndicatorGroup>
                           <Select.Indicator />
@@ -309,7 +262,7 @@ const GamesPage: React.FC = () => {
                       <Portal>
                         <Select.Positioner>
                           <Select.Content>
-                            {genresFrameworks.items.map((item) => (
+                            {sortOptions.items.map((item) => (
                               <Select.Item item={item} key={item.value}>
                                 {item.label}
                                 <Select.ItemIndicator />
@@ -319,50 +272,7 @@ const GamesPage: React.FC = () => {
                         </Select.Positioner>
                       </Portal>
                     </Select.Root>
-                  </HStack>
-
-                  {/* Sort By Select */}
-                  <Select.Root
-                    collection={sortOptions}
-                    size="sm"
-                    value={[sortBy]}
-                    onValueChange={({ value }) =>
-                      setSortBy(value[0] || "popular")
-                    }
-                    minW="150px"
-                    bg="var(--dark-800)"
-                    border="1px solid"
-                    borderColor="var(--dark-600)"
-                    _focus={{
-                      borderColor: "var(--primary-400)",
-                      boxShadow: "0 0 0 1px var(--chakra-colors-primary-400)",
-                    }}
-                    transition={"border-color 0.2s, box-shadow 0.2s"}
-                  >
-                    <Select.HiddenSelect />
-                    <Select.Control>
-                      <Select.Trigger>
-                        <Select.ValueText placeholder="Select sort option" />
-                      </Select.Trigger>
-                      <Select.IndicatorGroup>
-                        <Select.Indicator />
-                      </Select.IndicatorGroup>
-                    </Select.Control>
-                    <Portal>
-                      <Select.Positioner>
-                        <Select.Content>
-                          {sortOptions.items.map((item) => (
-                            <Select.Item item={item} key={item.value}>
-                              {item.label}
-                              <Select.ItemIndicator />
-                            </Select.Item>
-                          ))}
-                        </Select.Content>
-                      </Select.Positioner>
-                    </Portal>
-                  </Select.Root>
-
-                  {/* View Mode Toggle */}
+                  </ErrorBoundary>
                   <HStack bg="var(--dark-800)" borderRadius="lg" p={1}>
                     <IconButton
                       aria-label="Grid view"
@@ -389,7 +299,6 @@ const GamesPage: React.FC = () => {
           </CardBody>
         </Card.Root>
 
-        {/* Games Grid */}
         <Grid
           templateColumns={
             viewMode === "grid"
@@ -399,7 +308,7 @@ const GamesPage: React.FC = () => {
           gap={6}
           mb={12}
         >
-          {filteredGames.map((game) => (
+          {sortedGames.map((game) => (
             <GameCard
               key={game.id}
               game={game}
@@ -408,7 +317,6 @@ const GamesPage: React.FC = () => {
           ))}
         </Grid>
 
-        {/* Load More */}
         <Box textAlign="center">
           <Button className="gaming-btn-primary" size="lg" px={8}>
             Load More Games
