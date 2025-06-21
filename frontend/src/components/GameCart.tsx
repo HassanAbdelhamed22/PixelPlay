@@ -51,11 +51,11 @@ const GameCard: React.FC<GameCardProps> = ({ game, size = "medium" }) => {
       >
         <Box position="relative">
           <Image
-            src={game.thumbnail.url}
+            src={`http://localhost:1337${ game.thumbnail.url}`}
             alt={game.thumbnail.name}
             h={heights[size]}
             w="100%"
-            objectFit="cover"
+            objectFit=""
             _hover={{ transform: "scale(1.1)" }}
             transition="transform 0.3s"
           />
@@ -88,7 +88,9 @@ const GameCard: React.FC<GameCardProps> = ({ game, size = "medium" }) => {
             fontSize="xs"
             backdropFilter="blur(4px)"
           >
-            {game.genres.map((genre) => genre.name).join(", ")}
+            {game.genres.length > 0
+              ? game.genres.map((genre) => genre.title).join(", ")
+              : "No Genres"}
           </Badge>
         </Box>
 
@@ -123,10 +125,7 @@ const GameCard: React.FC<GameCardProps> = ({ game, size = "medium" }) => {
                   textDecoration="line-through"
                   fontSize="sm"
                 >
-                  $
-                  {(game.price * (1 + game.discountPercentage / 100)).toFixed(
-                    2
-                  )}
+                  ${(game.price * (1 + game.discountPercentage / 100)).toFixed(2)}
                 </Text>
               )}
             </HStack>
