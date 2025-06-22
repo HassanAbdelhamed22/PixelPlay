@@ -51,7 +51,7 @@ const GameCard: React.FC<GameCardProps> = ({ game, size = "medium" }) => {
       >
         <Box position="relative">
           <Image
-            src={`http://localhost:1337${ game.thumbnail.url}`}
+            src={`http://localhost:1337${game.thumbnail.url}`}
             alt={game.thumbnail.name}
             h={heights[size]}
             w="100%"
@@ -116,18 +116,32 @@ const GameCard: React.FC<GameCardProps> = ({ game, size = "medium" }) => {
 
           <HStack justifyContent="space-between" alignItems="center">
             <HStack gap={2}>
-              <Text fontSize="xl" fontWeight="bold" color="var(--primary-500)">
-                ${game.price.toFixed(2)}
-              </Text>
               {game.discountPercentage > 0 && (
                 <Text
-                  color="gray.400"
-                  textDecoration="line-through"
-                  fontSize="sm"
+                  fontSize="xl"
+                  fontWeight="bold"
+                  color="var(--primary-500)"
                 >
-                  ${(game.price * (1 + game.discountPercentage / 100)).toFixed(2)}
+                  $
+                  {(game.price * (1 - game.discountPercentage / 100)).toFixed(
+                    2
+                  )}
                 </Text>
               )}
+              <Text
+                fontSize={game.discountPercentage > 0 ? "md" : "xl"}
+                fontWeight={game.discountPercentage > 0 ? "normal" : "bold"}
+                color={
+                  game.discountPercentage > 0
+                    ? "gray.400"
+                    : "var(--primary-500)"
+                }
+                textDecoration={
+                  game.discountPercentage > 0 ? "line-through" : "none"
+                }
+              >
+                ${game.price.toFixed(2)}
+              </Text>
             </HStack>
             <Link to={`/cart/add/${game.id}`}>
               <Button
