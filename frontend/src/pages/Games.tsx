@@ -17,9 +17,10 @@ import {
 import { Select, createListCollection } from "@chakra-ui/react";
 import { SearchIcon, FilterIcon, GridIcon, ListIcon } from "lucide-react";
 import type { Game } from "../types";
-import GameCard from "../components/GameCart";
+import GameCard from "../components/GameCard";
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
+import GamesSkeleton from "../components/GamesCardSkeleton";
 
 class ErrorBoundary extends Component<
   { children: React.ReactNode },
@@ -143,14 +144,6 @@ const GamesPage: React.FC = () => {
     if (sortBy === "rating") return b.rating - a.rating;
     return 0;
   });
-
-  if (isLoading) {
-    return <Text>Loading games...</Text>;
-  }
-
-  if (isError) {
-    return <Text color="red.500">Error loading games</Text>;
-  }
 
   return (
     <Box minH="100vh" py={8}>
@@ -315,23 +308,33 @@ const GamesPage: React.FC = () => {
           </CardBody>
         </Card.Root>
 
-        <Grid
-          templateColumns={
-            viewMode === "grid"
-              ? "repeat(auto-fill, minmax(250px, 1fr))"
-              : "1fr"
-          }
-          gap={6}
-          mb={12}
-        >
-          {sortedGames.map((game) => (
-            <GameCard
-              key={game.id}
-              game={game}
-              size={viewMode === "list" ? "small" : "medium"}
-            />
-          ))}
-        </Grid>
+        {isError ? (
+          <Text color="red.500">
+            Error loading games. Please try again later.
+          </Text>
+        ) : (
+          <Grid
+            templateColumns={
+              viewMode === "grid"
+                ? "repeat(auto-fill, minmax(250px, 1fr))"
+                : "1fr"
+            }
+            gap={6}
+            mb={12}
+          >
+            {isLoading
+              ? Array.from({ length: 12 }).map((_, index) => (
+                  <GamesSkeleton key={index} />
+                ))
+              : sortedGames.map((game) => (
+                  <GameCard
+                    key={game.id}
+                    game={game}
+                    size={viewMode === "list" ? "small" : "medium"}
+                  />
+                ))}
+          </Grid>
+        )}
 
         <Box textAlign="center">
           <Button className="gaming-btn-primary" size="lg" px={8}>
