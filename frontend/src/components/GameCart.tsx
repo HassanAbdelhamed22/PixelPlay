@@ -51,13 +51,14 @@ const GameCard: React.FC<GameCardProps> = ({ game, size = "medium" }) => {
       >
         <Box position="relative">
           <Image
-            src={`http://localhost:1337${game.thumbnail.url}`}
+            src={`${import.meta.env.VITE_SERVER_URL}${game?.thumbnail?.url}`}
             alt={game.thumbnail.name}
             h={heights[size]}
             w="100%"
             objectFit=""
             _hover={{ transform: "scale(1.1)" }}
             transition="transform 0.3s"
+            loading="lazy"
           />
           {game.discountPercentage > 0 && (
             <Badge

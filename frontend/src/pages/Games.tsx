@@ -68,7 +68,9 @@ const GamesPage: React.FC = () => {
   useEffect(() => {
     axios
       .get(
-        "http://localhost:1337/api/games?populate[thumbnail]=true&populate[images]=true&populate[genres]=true"
+        `${
+          import.meta.env.VITE_SERVER_URL
+        }/api/games?populate[thumbnail]=true&populate[images]=true&populate[genres]=true`
       )
       .then((response) => {
         const mappedGames = response.data.data.map(mapGameData);
