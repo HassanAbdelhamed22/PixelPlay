@@ -22,6 +22,7 @@ import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
 import GamesSkeleton from "../components/GamesCardSkeleton";
 
+
 class ErrorBoundary extends Component<
   { children: React.ReactNode },
   { hasError: boolean }
@@ -47,6 +48,7 @@ const GamesPage: React.FC = () => {
 
   const mapGameData = (data: any): Game => ({
     id: data.id || data.documentId,
+    documentId: data.documentId || data.id,
     title: data.title || "Untitled",
     description: data.description || "",
     price: data.price || 0,
@@ -328,7 +330,7 @@ const GamesPage: React.FC = () => {
                 ))
               : sortedGames.map((game) => (
                   <GameCard
-                    key={game.id}
+                    key={game.documentId}
                     game={game}
                     size={viewMode === "list" ? "small" : "medium"}
                   />

@@ -36,8 +36,10 @@ const GameCard: React.FC<GameCardProps> = ({ game, size = "medium" }) => {
     ));
   };
 
+  console.log("GameCard props:", game);
+
   return (
-    <Link to={`/game/${game.id}`} style={{ textDecoration: "none" }}>
+    <Link to={`/game/${game.documentId}`} style={{ textDecoration: "none" }}>
       <Card.Root
         cursor="pointer"
         borderRadius="xl"
