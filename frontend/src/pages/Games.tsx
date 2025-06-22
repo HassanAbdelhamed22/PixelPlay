@@ -1,4 +1,4 @@
-import React, { useEffect, useState, Component } from "react";
+import React, { useState, Component } from "react";
 import {
   Box,
   Container,
@@ -19,6 +19,7 @@ import { SearchIcon, FilterIcon, GridIcon, ListIcon } from "lucide-react";
 import type { Game } from "../types";
 import GameCard from "../components/GameCart";
 import axios from "axios";
+import { useQuery } from "@tanstack/react-query";
 
 class ErrorBoundary extends Component<
   { children: React.ReactNode },
@@ -42,7 +43,6 @@ const GamesPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [sortBy, setSortBy] = useState("popular");
   const [filterGenre, setFilterGenre] = useState("all");
-  const [games, setGames] = useState<Game[]>([]);
 
   const mapGameData = (data: any): Game => ({
     id: data.id || data.documentId,
@@ -65,36 +65,39 @@ const GamesPage: React.FC = () => {
     genres: data.genres || [],
   });
 
-  useEffect(() => {
-    axios
-      .get(
+  const fetchGames = async () => {
+    try {
+      const { data } = await axios.get(
         `${
           import.meta.env.VITE_SERVER_URL
         }/api/games?populate[thumbnail]=true&populate[images]=true&populate[genres]=true`
-      )
-      .then((response) => {
-        const mappedGames = response.data.data.map(mapGameData);
-        setGames(mappedGames);
-        console.log("Mapped games data:", mappedGames);
-      })
-      .catch((error) => {
-        console.error("Error fetching games data:", error);
-      });
-  }, []);
+      );
+      return data.data.map(mapGameData);
+    } catch (error) {
+      console.error("Error fetching games:", error);
+    }
+  };
+
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["games"],
+    queryFn: fetchGames,
+  });
 
   const allGenres = Array.from(
     new Set(
-      games
-        .flatMap((game) =>
-          game.genres
-            ? game.genres
-                .map((genre) => genre.title)
-                .filter(
-                  (name) => typeof name === "string" && name.trim() !== ""
-                )
-            : []
-        )
-        .filter(Boolean)
+      Array.isArray(data)
+        ? (data as Game[])
+            .flatMap((game) =>
+              game.genres
+                ? game.genres
+                    .map((genre) => genre.title)
+                    .filter(
+                      (name) => typeof name === "string" && name.trim() !== ""
+                    )
+                : []
+            )
+            .filter(Boolean)
+        : []
     )
   );
 
@@ -120,11 +123,14 @@ const GamesPage: React.FC = () => {
     ],
   });
 
-  const filteredGames = games.filter(
-    (game) =>
-      filterGenre === "all" ||
-      game.genres.some((genre) => genre.title === filterGenre)
-  );
+  const filteredGames = data
+    ? (data as Game[]).map(mapGameData).filter((game) => {
+        if (filterGenre === "all") return true;
+        return game.genres.some(
+          (genre) => genre.title.toLowerCase() === filterGenre.toLowerCase()
+        );
+      })
+    : [];
 
   const sortedGames = [...filteredGames].sort((a, b) => {
     if (sortBy === "popular") return b.rating - a.rating;
@@ -137,6 +143,14 @@ const GamesPage: React.FC = () => {
     if (sortBy === "rating") return b.rating - a.rating;
     return 0;
   });
+
+  if (isLoading) {
+    return <Text>Loading games...</Text>;
+  }
+
+  if (isError) {
+    return <Text color="red.500">Error loading games</Text>;
+  }
 
   return (
     <Box minH="100vh" py={8}>
