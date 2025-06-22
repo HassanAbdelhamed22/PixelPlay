@@ -144,19 +144,17 @@ const GameCard: React.FC<GameCardProps> = ({ game, size = "medium" }) => {
                 ${game.price.toFixed(2)}
               </Text>
             </HStack>
-            <Link to={`/cart/add/${game.id}`}>
-              <Button
-                size="sm"
-                _hover={{ transform: "scale(1.05)" }}
-                display="flex"
-                alignItems="center"
-                gap={2}
-                className="gaming-btn-secondary"
-              >
-                <ShoppingCartIcon size={16} />
-                Add
-              </Button>
-            </Link>
+            <Button
+              size="sm"
+              _hover={{ transform: "scale(1.05)" }}
+              display="flex"
+              alignItems="center"
+              gap={2}
+              className="gaming-btn-secondary"
+            >
+              <ShoppingCartIcon size={16} />
+              Add
+            </Button>
           </HStack>
         </CardBody>
       </Card.Root>
