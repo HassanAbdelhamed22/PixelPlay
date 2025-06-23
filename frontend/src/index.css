@@ -346,3 +346,25 @@
   cursor: pointer;
   transition: background-color 0.2s;
 }
+
+.nav-link {
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: gray.300;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.nav-link:hover {
+  color: var(--primary-400);
+}
+
+.nav-link.active {
+  color: var(--primary-400);
+  border-bottom: 2px solid var(--primary-400);
+}
+
+.nav-link.active:hover {
+  color: var(--primary-400); 
+}
