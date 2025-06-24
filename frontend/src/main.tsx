@@ -4,6 +4,8 @@ import App from "./App.tsx";
 import { Provider } from "./components/ui/provider";
 import { BrowserRouter as Router } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Provider as ReduxProvider } from "react-redux";
+import { store } from "./app/store.ts";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -20,11 +22,13 @@ const queryClient = new QueryClient({
 });
 
 createRoot(document.getElementById("root")!).render(
-  <QueryClientProvider client={queryClient}>
-    <Router>
-      <Provider>
-        <App />
-      </Provider>
-    </Router>
-  </QueryClientProvider>
+  <ReduxProvider store={store}>
+    <QueryClientProvider client={queryClient}>
+      <Router>
+        <Provider>
+          <App />
+        </Provider>
+      </Router>
+    </QueryClientProvider>
+  </ReduxProvider>
 );
