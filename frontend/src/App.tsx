@@ -6,10 +6,12 @@ import GameDetails from "./pages/GameDetails";
 import Navbar from "./layout/Navbar";
 import NotFound from "./pages/NotFound";
 import LoginPage from "./pages/Login";
+import { Toaster } from "./components/ui/toaster";
 
 function App() {
   return (
     <>
+      <Toaster />
       <Navbar />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
