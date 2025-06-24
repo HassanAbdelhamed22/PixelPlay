@@ -11,30 +11,36 @@ import {
   Field,
 } from "@chakra-ui/react";
 import { PasswordInput } from "../components/ui/password-input";
-import { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { selectLogin, userLogin } from "../app/features/loginSlice";
+import type { AppDispatch } from "../app/store";
+import { useForm } from "react-hook-form";
+
+interface FormValues {
+  identifier: string;
+  password: string;
+}
 
 export default function LoginPage() {
-  const [value, setValue] = useState("");
-  const [user, setUser] = useState({
-    email: "",
-    password: "",
+  const dispatch = useDispatch<AppDispatch>();
+  const { loading } = useSelector(selectLogin);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<FormValues>({
+    defaultValues: {
+      identifier: "",
+      password: "",
+    },
   });
 
-  const onChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setUser({
-      ...user,
-      [name]: value,
-    });
-  };
-
-  const submitHandler = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log(user);
-  };
+  const onSubmit = handleSubmit((data) => {
+    dispatch(userLogin(data));
+  });
 
   return (
-    <form onSubmit={submitHandler}>
+    <form onSubmit={onSubmit}>
       <Stack
         minH={"90vh"}
         direction={{ base: "column", md: "row" }}
@@ -47,32 +53,36 @@ export default function LoginPage() {
               Sign in to your account
             </Heading>
             <Box>
-              <Field.Root invalid={!user.email}>
+              <Field.Root invalid={!!errors.identifier}>
                 <Field.Label>Email</Field.Label>
                 <Input
                   type="email"
-                  id="email"
+                  id="identifier"
                   focusRingColor={"var(--primary-500)"}
                   required
                   placeholder="example@domain.com"
-                  value={user.email}
-                  onChange={onChangeHandler}
-                  name="email"
+                  {...register("identifier", {
+                    required: "Email is required",
+                    pattern: {
+                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                      message: "Please enter a valid email address",
+                    },
+                  })}
                 />
-                <Field.ErrorText>This field is required</Field.ErrorText>
+                <Field.ErrorText>{errors.identifier?.message}</Field.ErrorText>
               </Field.Root>
             </Box>
-            <Field.Root invalid={!user.password}>
+            <Field.Root invalid={!!errors.password}>
               <Field.Label>Password</Field.Label>
               <PasswordInput
-                value={user.password}
-                onChange={onChangeHandler}
-                name="password"
+                id="password"
+                {...register("password", {
+                  required: "Password is required",
+                })}
                 focusRingColor={"var(--primary-500)"}
-                required
                 placeholder="Password"
               />
-              <Field.ErrorText>This field is required</Field.ErrorText>
+              <Field.ErrorText>{errors.password?.message}</Field.ErrorText>
             </Field.Root>
             <Stack gap={6}>
               <Stack
@@ -102,7 +112,8 @@ export default function LoginPage() {
                 variant={"solid"}
                 className="gaming-btn-primary"
                 type="submit"
-                disabled={!user.email || !user.password}
+                disabled={!!errors.identifier || !!errors.password}
+                loading={loading}
               >
                 Sign in
               </Button>
