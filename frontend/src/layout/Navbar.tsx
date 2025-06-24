@@ -59,7 +59,7 @@ const Navbar = () => {
         bg="var(--dark-950)"
         backdropFilter="blur(10px)"
       >
-        <Container maxW="8xl">
+        <Container maxW="7xl">
           <Flex h={16} alignItems="center" justifyContent="space-between">
             {/* Logo */}
             <Link to="/" style={{ textDecoration: "none" }}>
