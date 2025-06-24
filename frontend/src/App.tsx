@@ -5,12 +5,14 @@ import HomePage from "./pages/Index";
 import GameDetails from "./pages/GameDetails";
 import Navbar from "./layout/Navbar";
 import NotFound from "./pages/NotFound";
+import LoginPage from "./pages/Login";
 
 function App() {
   return (
     <>
       <Navbar />
       <Routes>
+        <Route path="/login" element={<LoginPage />} />
         <Route path="/" element={<HomePage />} />
         <Route path="/games" element={<GamesPage />} />
         <Route path="/game/:id" element={<GameDetails />} />
