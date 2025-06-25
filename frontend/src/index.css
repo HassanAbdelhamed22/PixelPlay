@@ -368,3 +368,24 @@
 .nav-link.active:hover {
   color: var(--primary-400); 
 }
+
+.nav-link-icon {
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: gray.300;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.nav-link-icon:hover {
+  color: var(--primary-400);
+}
+
+.nav-link-icon.active {
+  color: var(--primary-400);
+}
+
+.nav-link-icon.active:hover {
+  color: var(--primary-400); 
+}
