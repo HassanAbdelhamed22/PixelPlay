@@ -92,6 +92,9 @@ export const loginSlice = createSlice({
           duration: 3000,
           closable: true,
         });
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 2000);
       })
       .addCase(userLogin.rejected, (state, action) => {
         state.loading = false;
