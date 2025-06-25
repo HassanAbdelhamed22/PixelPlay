@@ -20,11 +20,15 @@ function App() {
           <Route path="/game/:id" element={<GameDetails />} />
           <Route path="/about" element={<AboutPage />} />
 
+          {/* Protected Route */}
+          <Route
+            path="/login"
+            element={<LoginPage isAuthenticated={token} />}
+          />
+
           {/* Fallback route for 404 Not Found */}
           <Route path="*" element={<NotFound />} />
         </Route>
-
-        <Route path="/login" element={<LoginPage isAuthenticated={token} />} />
       </Routes>
     </>
   );
