@@ -12,6 +12,10 @@ import {
 import { StarIcon, ShoppingCartIcon } from "lucide-react";
 import type { Game } from "../types";
 import { Link } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import type { AppDispatch } from "../app/store";
+import { addToCart } from "../app/features/cartSlice";
+import { toaster } from "./ui/toaster";
 
 interface GameCardProps {
   game: Game;
@@ -19,6 +23,7 @@ interface GameCardProps {
 }
 
 const GameCard: React.FC<GameCardProps> = ({ game, size = "medium" }) => {
+  const dispatch = useDispatch<AppDispatch>();
   const heights = {
     small: "128px",
     medium: "192px",
@@ -36,7 +41,18 @@ const GameCard: React.FC<GameCardProps> = ({ game, size = "medium" }) => {
     ));
   };
 
-  console.log("GameCard props:", game);
+  const addToCartHandler = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    event.preventDefault();
+    console.log("Adding to cart:", game);
+    dispatch(addToCart(game));
+    toaster.create({
+      title: `${game.title} added to cart successfully`,
+      type: "success",
+      duration: 3000,
+      closable: true,
+    });
+  };
 
   return (
     <Link to={`/game/${game.documentId}`} style={{ textDecoration: "none" }}>
@@ -153,6 +169,7 @@ const GameCard: React.FC<GameCardProps> = ({ game, size = "medium" }) => {
               alignItems="center"
               gap={2}
               className="gaming-btn-secondary"
+              onClick={addToCartHandler}
             >
               <ShoppingCartIcon size={16} />
               Add
