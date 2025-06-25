@@ -20,6 +20,7 @@ import {
   CloseButton,
   Container,
   Portal,
+  Button,
 } from "@chakra-ui/react";
 import {
   GamepadIcon,
@@ -29,9 +30,9 @@ import {
   MenuIcon,
   HomeIcon,
   TagIcon,
-  TrophyIcon,
   HeadphonesIcon,
 } from "lucide-react";
+import { token } from "../constant";
 
 const Navbar = () => {
   const { open, onOpen, onClose } = useDisclosure();
@@ -41,7 +42,7 @@ const Navbar = () => {
     { name: "Home", to: "/", icon: HomeIcon },
     { name: "Games", to: "/games", icon: GamepadIcon },
     { name: "Categories", to: "/categories", icon: TagIcon },
-    { name: "Deals", to: "/deals", icon: TrophyIcon },
+    // { name: "Deals", to: "/deals", icon: TrophyIcon },
     { name: "Support", to: "/support", icon: HeadphonesIcon },
   ];
 
@@ -114,44 +115,83 @@ const Navbar = () => {
                   size="sm"
                 />
               </InputGroup>
-              <Box position="relative">
-                <Link to="/cart">
-                  <IconButton
-                    aria-label="Cart"
-                    variant="ghost"
-                    color="gray.300"
-                    _hover={{ color: "var(--primary-400)" }}
-                  >
-                    <ShoppingCartIcon size={20} />
-                  </IconButton>
-                </Link>
-                <Badge
-                  position="absolute"
-                  top="-1"
-                  right="-1"
-                  bg="var(--secondary-500)"
-                  color="white"
-                  borderRadius="full"
-                  fontSize="xs"
-                  minW="20px"
-                  h="20px"
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="center"
-                >
-                  3
-                </Badge>
-              </Box>
-              <Link to="/profile">
-                <IconButton
-                  aria-label="Profile"
-                  variant="ghost"
-                  color="gray.300"
-                  _hover={{ color: "var(--primary-400)" }}
-                >
-                  <UserIcon size={20} />
-                </IconButton>
-              </Link>
+              {token ? (
+                <>
+                  <Box position="relative">
+                    <Link to="/cart">
+                      <IconButton
+                        aria-label="Cart"
+                        variant="ghost"
+                        color="gray.300"
+                        _hover={{ color: "var(--primary-400)" }}
+                      >
+                        <ShoppingCartIcon size={20} />
+                      </IconButton>
+                    </Link>
+                    <Badge
+                      position="absolute"
+                      top="-1"
+                      right="-1"
+                      bg="var(--secondary-500)"
+                      color="white"
+                      borderRadius="full"
+                      fontSize="xs"
+                      minW="20px"
+                      h="20px"
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="center"
+                    >
+                      3
+                    </Badge>
+                  </Box>
+                  <Link to="/profile">
+                    <IconButton
+                      aria-label="Profile"
+                      variant="ghost"
+                      color="gray.300"
+                      _hover={{ color: "var(--primary-400)" }}
+                    >
+                      <UserIcon size={20} />
+                    </IconButton>
+                  </Link>
+                </>
+              ) : (
+                <Box display="flex" gap={2}>
+                  <Link to="/login">
+                    <Button
+                      colorScheme="teal"
+                      className="gaming-btn-primary"
+                      color="white"
+                      variant="solid"
+                      size="sm"
+                    >
+                      Login
+                    </Button>
+                  </Link>
+                  <Link to="/register">
+                    <Button
+                      colorScheme="teal"
+                      color="white"
+                      variant="outline"
+                      borderColor="var(--primary-900)"
+                      borderWidth="2px"
+                      _hover={{
+                        bg: "var(--primary-600)",
+                        color: "white",
+                        borderColor: "var(--primary-600)",
+                        scale: 1.05,
+                        boxShadow: "0 8px 25px rgba(34, 211, 238, 0.5)",
+                        transform: "translateY(-2px)",
+                      }}
+                      transition={"all 0.3s"}
+                      size="sm"
+                    >
+                      Register
+                    </Button>
+                  </Link>
+                </Box>
+              )}
             </HStack>
 
             {/* Mobile menu button */}
