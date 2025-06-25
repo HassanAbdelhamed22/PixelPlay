@@ -35,8 +35,13 @@ import {
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
+import { useDispatch } from "react-redux";
+import type { AppDispatch } from "../app/store";
+import { addToCart } from "../app/features/cartSlice";
+import { toaster } from "../components/ui/toaster";
 
 const GameDetails = () => {
+  const dispatch = useDispatch<AppDispatch>();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [selectedImage, setSelectedImage] = useState(0);
@@ -133,6 +138,18 @@ const GameDetails = () => {
         fill={i < Math.floor(rating) ? "#fbbf24" : "none"}
       />
     ));
+  };
+
+  const addToCartHandler = () => {
+    if (!data) return;
+    console.log("Adding to cart:", data);
+    dispatch(addToCart(data));
+    toaster.create({
+      title: `${data.title} added to cart successfully`,
+      type: "success",
+      duration: 3000,
+      closable: true,
+    });
   };
 
   if (isLoading) {
@@ -622,6 +639,7 @@ const GameDetails = () => {
                       w="100%"
                       color="white"
                       fontWeight="bold"
+                      onClick={addToCartHandler}
                     >
                       <ShoppingCartIcon size={20} />
                       Add to Cart
