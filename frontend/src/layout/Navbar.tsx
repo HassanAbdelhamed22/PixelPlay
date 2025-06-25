@@ -35,6 +35,7 @@ import {
   LogOutIcon,
 } from "lucide-react";
 import { token } from "../constant";
+import CookieService from "../services/CookieService";
 
 const Navbar = () => {
   const { open, onOpen, onClose } = useDisclosure();
@@ -49,6 +50,11 @@ const Navbar = () => {
   ];
 
   const isActive = (path: string) => location.pathname === path;
+
+  const handleLogout = () => {
+    CookieService.remove("jwt");
+    window.location.reload();
+  };
 
   return (
     <Box bg="var(--dark-950)" color="white">
@@ -172,6 +178,7 @@ const Navbar = () => {
                             color="fg.error"
                             _hover={{ bg: "bg.error", color: "fg.error" }}
                             cursor={"pointer"}
+                            onClick={handleLogout}
                           >
                             <LogOutIcon size={15} />
                             Logout
@@ -296,9 +303,11 @@ const Navbar = () => {
                             <Text>Cart (3)</Text>
                           </HStack>
                         </Link>
-                        <Link
-                          to="/profile"
-                          onClick={onClose}
+                        <Button
+                          onClick={() => {
+                            onClose();
+                            handleLogout();
+                          }}
                           className={`nav-link-icon ${
                             isActive("/profile") ? "active" : ""
                           }`}
@@ -307,7 +316,7 @@ const Navbar = () => {
                             <UserIcon size={20} />
                             <Text>Profile</Text>
                           </HStack>
-                        </Link>
+                        </Button>
                       </HStack>
                       <HStack
                         color="fg.error"
