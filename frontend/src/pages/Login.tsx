@@ -15,13 +15,22 @@ import { useDispatch, useSelector } from "react-redux";
 import { selectLogin, userLogin } from "../app/features/loginSlice";
 import type { AppDispatch } from "../app/store";
 import { useForm } from "react-hook-form";
+import { Navigate } from "react-router-dom";
 
 interface FormValues {
   identifier: string;
   password: string;
 }
 
-export default function LoginPage() {
+interface LoginPageProps {
+  isAuthenticated: boolean;
+}
+
+export default function LoginPage({ isAuthenticated }: LoginPageProps) {
+  if (isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
+
   const dispatch = useDispatch<AppDispatch>();
   const { loading } = useSelector(selectLogin);
   const {
