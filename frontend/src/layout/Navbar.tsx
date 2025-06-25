@@ -36,8 +36,11 @@ import {
 } from "lucide-react";
 import { token } from "../constant";
 import CookieService from "../services/CookieService";
+import { useSelector } from "react-redux";
+import { selectCart } from "../app/features/cartSlice";
 
 const Navbar = () => {
+  const { cartGames } = useSelector(selectCart);
   const { open, onOpen, onClose } = useDisclosure();
   const location = useLocation();
 
@@ -136,22 +139,24 @@ const Navbar = () => {
                         <ShoppingCartIcon size={20} />
                       </IconButton>
                     </Link>
-                    <Badge
-                      position="absolute"
-                      top="-1"
-                      right="-1"
-                      bg="var(--secondary-500)"
-                      color="white"
-                      borderRadius="full"
-                      fontSize="xs"
-                      minW="20px"
-                      h="20px"
-                      display="flex"
-                      alignItems="center"
-                      justifyContent="center"
-                    >
-                      3
-                    </Badge>
+                    {cartGames.length > 0 && (
+                      <Badge
+                        position="absolute"
+                        top="-1"
+                        right="-1"
+                        bg="var(--secondary-500)"
+                        color="white"
+                        borderRadius="full"
+                        fontSize="xs"
+                        minW="20px"
+                        h="20px"
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="center"
+                      >
+                        {cartGames.length}
+                      </Badge>
+                    )}
                   </Box>
                   <Menu.Root>
                     <Menu.Trigger
