@@ -2,6 +2,7 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 import type { RootState } from "../store";
 import { toaster } from "../../components/ui/toaster";
+import CookieService from "../../services/CookieService";
 
 interface User {
   identifier: string;
@@ -80,6 +81,11 @@ export const loginSlice = createSlice({
         state.loading = false;
         state.data = action.payload;
         state.error = null;
+        const date = new Date();
+        date.setTime(date.getTime() + 24 * 60 * 60 * 1000);
+        const options = { path: "/", expires: date };
+        CookieService.set("jwt", action.payload.jwt, options);
+        console.log("Cookie set:", CookieService.get("jwt"));
         toaster.create({
           title: "Logged in successfully",
           type: "success",
