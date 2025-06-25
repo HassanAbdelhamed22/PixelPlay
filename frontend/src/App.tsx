@@ -7,6 +7,7 @@ import NotFound from "./pages/NotFound";
 import LoginPage from "./pages/Login";
 import { Toaster } from "./components/ui/toaster";
 import AppLayout from "./layout/AppLayout";
+import { token } from "./constant";
 
 function App() {
   return (
@@ -22,8 +23,8 @@ function App() {
           {/* Fallback route for 404 Not Found */}
           <Route path="*" element={<NotFound />} />
         </Route>
-        
-        <Route path="/login" element={<LoginPage />} />
+
+        <Route path="/login" element={<LoginPage isAuthenticated={token} />} />
       </Routes>
     </>
   );
