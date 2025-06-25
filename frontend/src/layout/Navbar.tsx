@@ -21,6 +21,7 @@ import {
   Container,
   Portal,
   Button,
+  Menu,
 } from "@chakra-ui/react";
 import {
   GamepadIcon,
@@ -31,6 +32,7 @@ import {
   HomeIcon,
   TagIcon,
   HeadphonesIcon,
+  LogOutIcon,
 } from "lucide-react";
 import { token } from "../constant";
 
@@ -145,16 +147,39 @@ const Navbar = () => {
                       3
                     </Badge>
                   </Box>
-                  <Link to="/profile">
-                    <IconButton
-                      aria-label="Profile"
-                      variant="ghost"
-                      color="gray.300"
-                      _hover={{ color: "var(--primary-400)" }}
+                  <Menu.Root>
+                    <Menu.Trigger
+                      asChild
+                      className={`nav-link-icon ${
+                        isActive("/profile") ? "active" : ""
+                      }`}
                     >
-                      <UserIcon size={20} />
-                    </IconButton>
-                  </Link>
+                      <HStack cursor={"pointer"}>
+                        <UserIcon size={20} />
+                      </HStack>
+                    </Menu.Trigger>
+                    <Portal>
+                      <Menu.Positioner>
+                        <Menu.Content bg={"var(--dark-950)"}>
+                          <Link to="/profile">
+                            <Menu.Item value="profile" cursor={"pointer"}>
+                              <UserIcon size={15} />
+                              Profile
+                            </Menu.Item>
+                          </Link>
+                          <Menu.Item
+                            value="logout"
+                            color="fg.error"
+                            _hover={{ bg: "bg.error", color: "fg.error" }}
+                            cursor={"pointer"}
+                          >
+                            <LogOutIcon size={15} />
+                            Logout
+                          </Menu.Item>
+                        </Menu.Content>
+                      </Menu.Positioner>
+                    </Portal>
+                  </Menu.Root>
                 </>
               ) : (
                 <Box display="flex" gap={2}>
@@ -256,46 +281,80 @@ const Navbar = () => {
                       borderColor="var(--dark-700)"
                     />
                   </InputGroup>
-                  <HStack gap={4}>
-                    <Link
-                      to="/cart"
-                      onClick={onClose}
-                      style={{
-                        color: "gray.300",
-                        textDecoration: "none",
-                      }}
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.color = "var(--primary-400)")
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.color = "gray.300")
-                      }
-                    >
-                      <HStack>
-                        <ShoppingCartIcon size={20} />
-                        <Text>Cart (3)</Text>
+                  {token ? (
+                    <Box display="flex" flexDir="column" gap={2}>
+                      <HStack gap={4}>
+                        <Link
+                          to="/cart"
+                          onClick={onClose}
+                          className={`nav-link-icon ${
+                            isActive("/cart") ? "active" : ""
+                          }`}
+                        >
+                          <HStack>
+                            <ShoppingCartIcon size={20} />
+                            <Text>Cart (3)</Text>
+                          </HStack>
+                        </Link>
+                        <Link
+                          to="/profile"
+                          onClick={onClose}
+                          className={`nav-link-icon ${
+                            isActive("/profile") ? "active" : ""
+                          }`}
+                        >
+                          <HStack>
+                            <UserIcon size={20} />
+                            <Text>Profile</Text>
+                          </HStack>
+                        </Link>
                       </HStack>
-                    </Link>
-                    <Link
-                      to="/profile"
-                      onClick={onClose}
-                      style={{
-                        color: "gray.300",
-                        textDecoration: "none",
-                      }}
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.color = "var(--primary-400)")
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.color = "gray.300")
-                      }
-                    >
-                      <HStack>
-                        <UserIcon size={20} />
-                        <Text>Profile</Text>
+                      <HStack
+                        color="fg.error"
+                        _hover={{ bg: "bg.error", color: "fg.error" }}
+                        cursor={"pointer"}
+                        p={2}
+                      >
+                        <LogOutIcon size={20} />
+                        <Text>Logout</Text>
                       </HStack>
-                    </Link>
-                  </HStack>
+                    </Box>
+                  ) : (
+                    <Box display="flex" gap={2}>
+                      <Link to="/login">
+                        <Button
+                          colorScheme="teal"
+                          className="gaming-btn-primary"
+                          color="white"
+                          variant="solid"
+                          size="sm"
+                        >
+                          Login
+                        </Button>
+                      </Link>
+                      <Link to="/register">
+                        <Button
+                          colorScheme="teal"
+                          color="white"
+                          variant="outline"
+                          borderColor="var(--primary-900)"
+                          borderWidth="2px"
+                          _hover={{
+                            bg: "var(--primary-600)",
+                            color: "white",
+                            borderColor: "var(--primary-600)",
+                            scale: 1.05,
+                            boxShadow: "0 8px 25px rgba(34, 211, 238, 0.5)",
+                            transform: "translateY(-2px)",
+                          }}
+                          transition={"all 0.3s"}
+                          size="sm"
+                        >
+                          Register
+                        </Button>
+                      </Link>
+                    </Box>
+                  )}
                 </VStack>
               </DrawerBody>
             </DrawerContent>
