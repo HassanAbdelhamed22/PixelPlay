@@ -8,6 +8,7 @@ import LoginPage from "./pages/Login";
 import { Toaster } from "./components/ui/toaster";
 import AppLayout from "./layout/AppLayout";
 import { token } from "./constant";
+import Cart from "./pages/Cart";
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
           <Route path="/games" element={<GamesPage />} />
           <Route path="/game/:id" element={<GameDetails />} />
           <Route path="/about" element={<AboutPage />} />
+          <Route path="/cart" element={<Cart />} />
 
           {/* Protected Route */}
           <Route
