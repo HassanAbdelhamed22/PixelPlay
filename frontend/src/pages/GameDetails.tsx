@@ -35,13 +35,15 @@ import {
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
-import { useDispatch } from "react-redux";
-import type { AppDispatch } from "../app/store";
+import { useDispatch, useSelector } from "react-redux";
+import type { AppDispatch, RootState } from "../app/store";
 import { addToCart } from "../app/features/cartSlice";
 import { toaster } from "../components/ui/toaster";
+import CookieService from "../services/CookieService";
 
 const GameDetails = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const { data: loginData } = useSelector((state: RootState) => state.login);
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [selectedImage, setSelectedImage] = useState(0);
@@ -140,16 +142,80 @@ const GameDetails = () => {
     ));
   };
 
-  const addToCartHandler = () => {
-    if (!data) return;
-    console.log("Adding to cart:", data);
-    dispatch(addToCart(data));
-    toaster.create({
-      title: `${data.title} added to cart successfully`,
-      type: "success",
-      duration: 3000,
-      closable: true,
-    });
+  const addToCartHandler = async (
+    event: React.MouseEvent<HTMLButtonElement>
+  ) => {
+    event.stopPropagation();
+    event.preventDefault();
+
+    if (!loginData?.user?.id) {
+      toaster.create({
+        title: "Please log in to add items to cart",
+        type: "error",
+        duration: 3000,
+        closable: true,
+      });
+      return;
+    }
+
+    if (!data) {
+      toaster.create({
+        title: "Game data is not loaded yet.",
+        type: "error",
+        duration: 3000,
+        closable: true,
+      });
+      return;
+    }
+
+    try {
+      const token = CookieService.get("jwt");
+      const response = await axios.post(
+        `${import.meta.env.VITE_SERVER_URL}/api/cart-items`,
+        {
+          data: {
+            quantity: 1,
+            game: data.id,
+            user: loginData.user.id,
+          },
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      // Check if response has the expected structure
+      if (!response.data?.data) {
+        throw new Error("Unexpected API response structure");
+      }
+
+      const cartItem = {
+        id: response.data.data.id,
+        documentId: response.data.data.documentId,
+        quantity: response.data.data.quantity || 1,
+        game: data,
+      };
+
+      dispatch(addToCart(cartItem));
+      toaster.create({
+        title: `${data.title} added to cart successfully`,
+        type: "success",
+        duration: 3000,
+        closable: true,
+      });
+    } catch (error: any) {
+      console.error("Error adding to cart:", error);
+      toaster.create({
+        title:
+          error.response?.data?.error?.message || "Failed to add item to cart",
+        type: "error",
+        duration: 3000,
+        closable: true,
+      });
+    }
   };
 
   if (isLoading) {
