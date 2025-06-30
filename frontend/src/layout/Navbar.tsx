@@ -40,7 +40,7 @@ import { useSelector } from "react-redux";
 import { selectCart } from "../app/features/cartSlice";
 
 const Navbar = () => {
-  const { cartGames } = useSelector(selectCart);
+  const { cartItems } = useSelector(selectCart);
   const { open, onOpen, onClose } = useDisclosure();
   const location = useLocation();
 
@@ -139,7 +139,7 @@ const Navbar = () => {
                         <ShoppingCartIcon size={20} />
                       </IconButton>
                     </Link>
-                    {cartGames.length > 0 && (
+                    {cartItems.length > 0 && (
                       <Badge
                         position="absolute"
                         top="-1"
@@ -154,7 +154,7 @@ const Navbar = () => {
                         alignItems="center"
                         justifyContent="center"
                       >
-                        {cartGames.length}
+                        {cartItems.length}
                       </Badge>
                     )}
                   </Box>
