@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Box,
@@ -17,58 +17,250 @@ import {
   Badge,
 } from "@chakra-ui/react";
 import { TrashIcon, PlusIcon, MinusIcon, ShoppingBagIcon } from "lucide-react";
+import type { Game } from "../types";
+import { useDispatch, useSelector } from "react-redux";
+import type { AppDispatch, RootState } from "../app/store";
+import { toaster } from "../components/ui/toaster";
+import {
+  removeFromCart,
+  setCartItems,
+  updateQuantity,
+} from "../app/features/cartSlice";
+import CookieService from "../services/CookieService";
+import axios from "axios";
+
+interface CartItem {
+  id: number;
+  documentId: string;
+  quantity: number;
+  game: Game;
+}
 
 const Cart: React.FC = () => {
-  // Mock cart data
-  const cartItems = [
-    {
-      id: 1,
-      title: "Cyber Nexus 2077",
-      price: 59.99,
-      originalPrice: 79.99,
-      image:
-        "https://images.pexels.com/photos/442576/pexels-photo-442576.jpeg?auto=compress&cs=tinysrgb&w=200",
-      quantity: 1,
-      discount: 25,
-    },
-    {
-      id: 2,
-      title: "Neon Racing Elite",
-      price: 39.99,
-      originalPrice: 49.99,
-      image:
-        "https://images.pexels.com/photos/735911/pexels-photo-735911.jpeg?auto=compress&cs=tinysrgb&w=200",
-      quantity: 1,
-      discount: 20,
-    },
-    {
-      id: 3,
-      title: "Space Odyssey VR",
-      price: 49.99,
-      originalPrice: 69.99,
-      image:
-        "https://images.pexels.com/photos/586063/pexels-photo-586063.jpeg?auto=compress&cs=tinysrgb&w=200",
-      quantity: 1,
-      discount: 30,
-    },
-  ];
+  const dispatch = useDispatch<AppDispatch>();
+  const { data: loginData } = useSelector((state: RootState) => state.login);
+  const { cartItems } = useSelector((state: RootState) => state.cart);
+  const [loading, setLoading] = useState(true);
 
+  // Fetch cart items
+  useEffect(() => {
+    if (!loginData?.user?.id) {
+      setLoading(false);
+      return;
+    }
+
+    const fetchCartItems = async () => {
+      try {
+        const token = CookieService.get("jwt");
+        const response = await axios.get(
+          `${
+            import.meta.env.VITE_SERVER_URL
+          }/api/cart-items?filters[user][id][$eq]=${
+            loginData.user.id
+          }&populate[game][populate][thumbnail]=true&populate[game][populate][genres]=true&populate[game][populate][images]=true&populate[game][populate][videoTrailer]=true`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        console.log("Cart Items Response:", response.data); // Debug log
+
+        const formattedItems: CartItem[] = response.data.data.map(
+          (item: any) => ({
+            id: item.id,
+            documentId: item.documentId,
+            quantity: item.quantity, // Strapi v5: quantity is directly under data
+            game: {
+              id: item.game?.id || 0,
+              documentId: item.game?.documentId || "",
+              title: item.game?.title || "Unknown Game",
+              price: item.game?.price || 0,
+              discountPercentage: item.game?.discountPercentage || 0,
+              thumbnail: {
+                url:
+                  item.game?.thumbnail?.url ||
+                  item.game?.thumbnail?.formats?.thumbnail?.url ||
+                  "",
+                name: item.game?.thumbnail?.name || "thumbnail",
+              },
+              genres:
+                item.game?.genres?.map((g: any) => ({
+                  id: g.id || "",
+                  title: g.title || "",
+                })) || [],
+              rating: item.game?.rating || 0,
+              platform: item.game?.platform || "",
+              developer: item.game?.developer || "",
+              releaseDate: item.game?.releaseDate || "",
+              stock: item.game?.stock || 0,
+              description: item.game?.description || "",
+              videoTrailer: item.game?.videoTrailer || null,
+              images: item.game?.images || null,
+            },
+          })
+        );
+
+        dispatch(setCartItems(formattedItems));
+        setLoading(false);
+      } catch (error: any) {
+        console.error("Error fetching cart items:", error);
+        toaster.create({
+          title:
+            error.response?.data?.error?.message || "Failed to load cart items",
+          type: "error",
+          duration: 3000,
+          closable: true,
+        });
+        setLoading(false);
+      }
+    };
+
+    fetchCartItems();
+  }, [loginData, dispatch]);
+
+  // Update quantity
+  const updateQuantityHandler = async (
+    cartItemDocumentId: string,
+    newQuantity: number
+  ) => {
+    if (newQuantity < 1) return;
+    try {
+      const token = CookieService.get("jwt");
+      const response = await axios.put(
+        `${
+          import.meta.env.VITE_SERVER_URL
+        }/api/cart-items/${cartItemDocumentId}`,
+        {
+          data: { quantity: newQuantity },
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      dispatch(
+        updateQuantity({
+          documentId: response.data.data.documentId,
+          quantity: response.data.data.quantity || newQuantity,
+        })
+      );
+      toaster.create({
+        title: "Quantity updated",
+        type: "success",
+        duration: 2000,
+        closable: true,
+      });
+    } catch (error: any) {
+      console.error("Error updating quantity:", error);
+      toaster.create({
+        title:
+          error.response?.data?.error?.message || "Failed to update quantity",
+        type: "error",
+        duration: 3000,
+        closable: true,
+      });
+    }
+  };
+
+  // Remove item
+  const removeItem = async (cartItemId: string) => {
+    try {
+      const token = CookieService.get("jwt");
+      await axios.delete(
+        `${import.meta.env.VITE_SERVER_URL}/api/cart-items/${cartItemId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      dispatch(removeFromCart(cartItemId));
+      toaster.create({
+        title: "Item removed from cart",
+        type: "success",
+        duration: 2000,
+        closable: true,
+      });
+    } catch (error: any) {
+      console.error("Error removing item:", error);
+      toaster.create({
+        title: error.response?.data?.error?.message || "Failed to remove item",
+        type: "error",
+        duration: 3000,
+        closable: true,
+      });
+    }
+  };
+
+  // Calculate totals
   const subtotal = cartItems.reduce(
-    (sum, item) => sum + item.price * item.quantity,
+    (sum, item) =>
+      sum +
+      item.quantity *
+        (item.game.discountPercentage > 0
+          ? item.game.price * (1 - item.game.discountPercentage / 100)
+          : item.game.price),
     0
   );
   const savings = cartItems.reduce(
     (sum, item) =>
-      sum + ((item.originalPrice || item.price) - item.price) * item.quantity,
+      sum +
+      item.quantity *
+        (item.game.discountPercentage > 0
+          ? item.game.price * (item.game.discountPercentage / 100)
+          : 0),
     0
   );
   const tax = subtotal * 0.08; // 8% tax
   const total = subtotal + tax;
 
-  if (cartItems.length === 0) {
+  if (loading) {
+    return (
+      <Box minH="100vh" py={16} textAlign="center">
+        <Text fontSize="xl" color="white">
+          Loading cart...
+        </Text>
+      </Box>
+    );
+  }
+
+  if (!loginData?.user?.id) {
     return (
       <Box minH="100vh" py={16}>
         <Container maxW="4xl" textAlign="center">
+          <ShoppingBagIcon size={96} color="gray" />
+          <Text fontSize="3xl" fontWeight="bold" color="white" mb={4} mt={6}>
+            Please log in
+          </Text>
+          <Text color="gray.400" mb={8}>
+            You need to be logged in to view your cart.
+          </Text>
+          <Link to="/login">
+            <Button className="gaming-btn-primary" size="lg" px={8}>
+              Log In
+            </Button>
+          </Link>
+        </Container>
+      </Box>
+    );
+  }
+
+  if (cartItems.length === 0) {
+    return (
+      <Box minH="100vh" py={16}>
+        <Container
+          maxW="4xl"
+          display="flex"
+          flexDirection="column"
+          alignItems="center"
+          justifyContent="center"
+        >
           <ShoppingBagIcon size={96} color="gray" />
           <Text fontSize="3xl" fontWeight="bold" color="white" mb={4} mt={6}>
             Your cart is empty
@@ -96,7 +288,6 @@ const Cart: React.FC = () => {
         </Text>
 
         <Grid templateColumns={{ base: "1fr", lg: "2fr 1fr" }} gap={8}>
-          {/* Cart Items */}
           <GridItem>
             <Card.Root className="gaming-card">
               <CardBody p={0}>
@@ -105,8 +296,11 @@ const Cart: React.FC = () => {
                     <Box p={6}>
                       <HStack gap={4} align="start">
                         <Image
-                          src={item.image}
-                          alt={item.title}
+                          src={`${import.meta.env.VITE_SERVER_URL}${
+                            item.game.thumbnail.url ||
+                            item.game.thumbnail.formats?.thumbnail?.url
+                          }`}
+                          alt={item.game.title}
                           w="80px"
                           h="80px"
                           objectFit="cover"
@@ -114,7 +308,7 @@ const Cart: React.FC = () => {
                         />
 
                         <VStack flex={1} align="start" gap={2}>
-                          <Link to={`/game/${item.id}`}>
+                          <Link to={`/game/${item.game.documentId}`}>
                             <Text
                               fontSize="lg"
                               fontWeight="bold"
@@ -124,10 +318,10 @@ const Cart: React.FC = () => {
                                 textDecoration: "none",
                               }}
                             >
-                              {item.title}
+                              {item.game.title}
                             </Text>
                           </Link>
-                          {item.discount > 0 && (
+                          {item.game.discountPercentage > 0 && (
                             <Badge
                               bg="var(--secondary-500)"
                               color="white"
@@ -137,13 +331,12 @@ const Cart: React.FC = () => {
                               fontSize="xs"
                               fontWeight="bold"
                             >
-                              -{item.discount}%
+                              -{item.game.discountPercentage}%
                             </Badge>
                           )}
                         </VStack>
 
                         <HStack gap={4}>
-                          {/* Quantity Controls */}
                           <HStack gap={2}>
                             <IconButton
                               aria-label="Decrease quantity"
@@ -151,6 +344,14 @@ const Cart: React.FC = () => {
                               bg="var(--dark-800)"
                               _hover={{ bg: "var(--dark-700)" }}
                               color="white"
+                              onClick={() => {
+                                if (item.documentId) {
+                                  updateQuantityHandler(
+                                    item.documentId,
+                                    item.quantity - 1
+                                  );
+                                }
+                              }}
                             >
                               <MinusIcon size={16} />
                             </IconButton>
@@ -168,37 +369,50 @@ const Cart: React.FC = () => {
                               bg="var(--dark-800)"
                               _hover={{ bg: "var(--dark-700)" }}
                               color="white"
+                              onClick={() =>
+                                typeof item.documentId === "string" &&
+                                updateQuantityHandler(
+                                  item.documentId,
+                                  item.quantity + 1
+                                )
+                              }
                             >
                               <PlusIcon size={16} />
                             </IconButton>
                           </HStack>
 
-                          {/* Price */}
                           <VStack gap={1} align="end">
                             <Text
                               fontSize="lg"
                               fontWeight="bold"
                               color="var(--primary-400)"
                             >
-                              ${item.price}
+                              $
+                              {(
+                                item.game.price *
+                                (1 - item.game.discountPercentage / 100)
+                              ).toFixed(2)}
                             </Text>
-                            {item.originalPrice && (
+                            {item.game.discountPercentage > 0 && (
                               <Text
                                 fontSize="sm"
                                 color="gray.400"
                                 textDecoration="line-through"
                               >
-                                ${item.originalPrice}
+                                ${item.game.price.toFixed(2)}
                               </Text>
                             )}
                           </VStack>
 
-                          {/* Remove Button */}
                           <IconButton
                             aria-label="Remove item"
                             variant="ghost"
                             color="red.400"
                             _hover={{ color: "red.300", bg: "red.900" }}
+                            onClick={() =>
+                              typeof item.documentId === "string" &&
+                              removeItem(String(item.documentId))
+                            }
                           >
                             <TrashIcon size={20} />
                           </IconButton>
@@ -213,7 +427,6 @@ const Cart: React.FC = () => {
               </CardBody>
             </Card.Root>
 
-            {/* Continue Shopping */}
             <Box mt={6}>
               <Link to="/games">
                 <Text
@@ -227,7 +440,6 @@ const Cart: React.FC = () => {
             </Box>
           </GridItem>
 
-          {/* Order Summary */}
           <GridItem>
             <Card.Root position="sticky" top="24px" className="gaming-card">
               <CardBody>
@@ -283,7 +495,6 @@ const Cart: React.FC = () => {
                   Secure checkout powered by industry-leading encryption
                 </Text>
 
-                {/* Promo Code */}
                 <Box divideY={"1px"} divideColor={"var(--dark-700)"}>
                   <Text
                     fontSize="sm"
