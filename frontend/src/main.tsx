@@ -6,6 +6,7 @@ import { BrowserRouter as Router } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Provider as ReduxProvider } from "react-redux";
 import { store } from "./app/store.ts";
+import AuthInitializer from "./components/AuthInitializer.tsx";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -26,6 +27,7 @@ createRoot(document.getElementById("root")!).render(
     <QueryClientProvider client={queryClient}>
       <Router>
         <Provider>
+          <AuthInitializer />
           <App />
         </Provider>
       </Router>
