@@ -91,6 +91,12 @@
       "relation": "manyToMany",
       "target": "api::genre.genre",
       "inversedBy": "games"
+    },
+    "cart_items": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::cart-item.cart-item",
+      "mappedBy": "game"
     }
   }
 }
