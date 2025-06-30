@@ -37,19 +37,18 @@ interface LoginState {
 }
 
 const initialState: LoginState = {
-  loading: false, //* Pending
-  data: null, //* Success => Fulfilled
-  error: null, //* Error => Rejected
+  loading: false,
+  data: null,
+  error: null,
 };
 
-// Update the async thunk to accept the user object
+// Thunk to login user
 export const userLogin = createAsyncThunk<
   LoginResponse,
   User,
   { rejectValue: LoginError }
 >("login/userLogin", async (user: User, thunkAPI) => {
   const { rejectWithValue } = thunkAPI;
-
   try {
     const response = await axios.post(
       `${import.meta.env.VITE_SERVER_URL}/api/auth/local`,
@@ -68,10 +67,54 @@ export const userLogin = createAsyncThunk<
   }
 });
 
+// Thunk to fetch user data using JWT token
+export const fetchUser = createAsyncThunk<
+  LoginResponse,
+  void,
+  { rejectValue: LoginError }
+>("login/fetchUser", async (_, thunkAPI) => {
+  const { rejectWithValue } = thunkAPI;
+  const token = CookieService.get("jwt");
+  if (!token) {
+    return rejectWithValue({ message: "No token found" });
+  }
+
+  try {
+    const response = await axios.get(
+      `${import.meta.env.VITE_SERVER_URL}/api/users/me`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    return { jwt: token, user: response.data };
+  } catch (error: any) {
+    CookieService.remove("jwt");
+    const errorPayload: LoginError = {
+      message:
+        error.response?.data?.error?.message || "Failed to fetch user data",
+      status: error.response?.status,
+      details: error.response?.data?.error?.details,
+    };
+    return rejectWithValue(errorPayload);
+  }
+});
+
 export const loginSlice = createSlice({
   name: "login",
   initialState,
-  reducers: {},
+  reducers: {
+    logout: (state) => {
+      state.data = null;
+      state.error = null;
+      CookieService.remove("jwt");
+      toaster.create({
+        title: "Logged out successfully",
+        type: "success",
+        duration: 3000,
+        closable: true,
+      });
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(userLogin.pending, (state) => {
@@ -85,7 +128,6 @@ export const loginSlice = createSlice({
         date.setTime(date.getTime() + 24 * 60 * 60 * 1000);
         const options = { path: "/", expires: date };
         CookieService.set("jwt", action.payload.jwt, options);
-        console.log("Cookie set:", CookieService.get("jwt"));
         toaster.create({
           title: "Logged in successfully",
           type: "success",
@@ -107,9 +149,23 @@ export const loginSlice = createSlice({
           duration: 3000,
           closable: true,
         });
+      })
+      .addCase(fetchUser.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchUser.fulfilled, (state, action) => {
+        state.loading = false;
+        state.data = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchUser.rejected, (state, action) => {
+        state.loading = false;
+        state.data = null;
+        state.error = action.payload ?? null;
       });
   },
 });
 
+export const { logout } = loginSlice.actions;
 export const selectLogin = (state: RootState) => state.login;
 export default loginSlice.reducer;
