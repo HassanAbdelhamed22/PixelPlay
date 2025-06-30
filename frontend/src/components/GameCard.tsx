@@ -12,10 +12,12 @@ import {
 import { StarIcon, ShoppingCartIcon } from "lucide-react";
 import type { Game } from "../types";
 import { Link } from "react-router-dom";
-import { useDispatch } from "react-redux";
-import type { AppDispatch } from "../app/store";
+import { useDispatch, useSelector } from "react-redux";
+import type { AppDispatch, RootState } from "../app/store";
 import { addToCart } from "../app/features/cartSlice";
 import { toaster } from "./ui/toaster";
+import CookieService from "../services/CookieService";
+import axios from "axios";
 
 interface GameCardProps {
   game: Game;
@@ -24,6 +26,7 @@ interface GameCardProps {
 
 const GameCard: React.FC<GameCardProps> = ({ game, size = "medium" }) => {
   const dispatch = useDispatch<AppDispatch>();
+  const { data: loginData } = useSelector((state: RootState) => state.login);
   const heights = {
     small: "128px",
     medium: "192px",
@@ -41,17 +44,68 @@ const GameCard: React.FC<GameCardProps> = ({ game, size = "medium" }) => {
     ));
   };
 
-  const addToCartHandler = (event: React.MouseEvent<HTMLButtonElement>) => {
+  const addToCartHandler = async (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
     event.preventDefault();
-    console.log("Adding to cart:", game);
-    dispatch(addToCart(game));
-    toaster.create({
-      title: `${game.title} added to cart successfully`,
-      type: "success",
-      duration: 3000,
-      closable: true,
-    });
+
+    if (!loginData?.user?.id) {
+      toaster.create({
+        title: "Please log in to add items to cart",
+        type: "error",
+        duration: 3000,
+        closable: true,
+      });
+      return;
+    }
+
+    try {
+      const token = CookieService.get("jwt");
+      const response = await axios.post(
+        `${import.meta.env.VITE_SERVER_URL}/api/cart-items`,
+        {
+          data: {
+            quantity: 1,
+            game: game.id,
+            user: loginData.user.id,
+          },
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      // Check if response has the expected structure
+      if (!response.data?.data) {
+        throw new Error("Unexpected API response structure");
+      }
+
+      const cartItem = {
+        id: response.data.data.id,
+        documentId: response.data.data.documentId,
+        quantity: response.data.data.quantity || 1,
+        game,
+      };
+
+      dispatch(addToCart(cartItem));
+      toaster.create({
+        title: `${game.title} added to cart successfully`,
+        type: "success",
+        duration: 3000,
+        closable: true,
+      });
+    } catch (error: any) {
+      console.error("Error adding to cart:", error);
+      toaster.create({
+        title:
+          error.response?.data?.error?.message || "Failed to add item to cart",
+        type: "error",
+        duration: 3000,
+        closable: true,
+      });
+    }
   };
 
   return (
