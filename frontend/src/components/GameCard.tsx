@@ -14,7 +14,7 @@ import type { Game } from "../types";
 import { Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../app/store";
-import { addToCart } from "../app/features/cartSlice";
+import { addToCart, updateQuantity } from "../app/features/cartSlice";
 import { toaster } from "./ui/toaster";
 import CookieService from "../services/CookieService";
 import axios from "axios";
@@ -27,6 +27,7 @@ interface GameCardProps {
 const GameCard: React.FC<GameCardProps> = ({ game, size = "medium" }) => {
   const dispatch = useDispatch<AppDispatch>();
   const { data: loginData } = useSelector((state: RootState) => state.login);
+  const { cartItems } = useSelector((state: RootState) => state.cart);
   const heights = {
     small: "128px",
     medium: "192px",
@@ -44,7 +45,9 @@ const GameCard: React.FC<GameCardProps> = ({ game, size = "medium" }) => {
     ));
   };
 
-  const addToCartHandler = async (event: React.MouseEvent<HTMLButtonElement>) => {
+  const addToCartHandler = async (
+    event: React.MouseEvent<HTMLButtonElement>
+  ) => {
     event.stopPropagation();
     event.preventDefault();
 
@@ -58,44 +61,104 @@ const GameCard: React.FC<GameCardProps> = ({ game, size = "medium" }) => {
       return;
     }
 
-    try {
-      const token = CookieService.get("jwt");
-      const response = await axios.post(
-        `${import.meta.env.VITE_SERVER_URL}/api/cart-items`,
-        {
-          data: {
-            quantity: 1,
-            game: game.id,
-            user: loginData.user.id,
-          },
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      // Check if response has the expected structure
-      if (!response.data?.data) {
-        throw new Error("Unexpected API response structure");
-      }
-
-      const cartItem = {
-        id: response.data.data.id,
-        documentId: response.data.data.documentId,
-        quantity: response.data.data.quantity || 1,
-        game,
-      };
-
-      dispatch(addToCart(cartItem));
+    const token = CookieService.get("jwt");
+    if (!token) {
       toaster.create({
-        title: `${game.title} added to cart successfully`,
-        type: "success",
+        title: "Session expired, please log in again",
+        type: "error",
         duration: 3000,
         closable: true,
       });
+      return;
+    }
+
+    // Check if game is already in cart
+    const existingItem = cartItems.find((item) => item.game.id === game.id);
+    if (existingItem) {
+      toaster.create({
+        title: `${game.title} is already in your cart`,
+        type: "info",
+        duration: 3000,
+        closable: true,
+      });
+      try {
+        const response = await axios.put(
+          `${import.meta.env.VITE_SERVER_URL}/api/cart-items/${
+            existingItem.documentId
+          }`,
+          {
+            data: { quantity: existingItem.quantity + 1 },
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        dispatch(
+          updateQuantity({
+            documentId: response.data.data.documentId,
+            quantity: response.data.data.quantity || existingItem.quantity + 1,
+          })
+        );
+        toaster.create({
+          title: "Quantity updated",
+          type: "success",
+          duration: 2000,
+          closable: true,
+        });
+      } catch (error: any) {
+        console.error("Error updating quantity:", error);
+        toaster.create({
+          title:
+            error.response?.data?.error?.message || "Failed to update quantity",
+          type: "error",
+          duration: 3000,
+          closable: true,
+        });
+      }
+    }
+
+    try {
+      if (!existingItem) {
+        const response = await axios.post(
+          `${import.meta.env.VITE_SERVER_URL}/api/cart-items`,
+          {
+            data: {
+              quantity: 1,
+              game: game.id,
+              user: loginData.user.id,
+            },
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!response.data?.data) {
+          throw new Error("Unexpected API response structure");
+        }
+
+        const cartItem = {
+          id: response.data.data.id,
+          documentId: response.data.data.documentId,
+          quantity: response.data.data.quantity || 1,
+          game,
+        };
+
+        dispatch(addToCart(cartItem));
+        toaster.create({
+          title: `${game.title} added to cart successfully`,
+          type: "success",
+          duration: 3000,
+          closable: true,
+        });
+      }
     } catch (error: any) {
       console.error("Error adding to cart:", error);
       toaster.create({
