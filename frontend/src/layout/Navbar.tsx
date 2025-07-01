@@ -33,6 +33,7 @@ import {
   TagIcon,
   HeadphonesIcon,
   LogOutIcon,
+  ChevronDownIcon,
 } from "lucide-react";
 import { token } from "../constant";
 import CookieService from "../services/CookieService";
@@ -165,8 +166,14 @@ const Navbar = () => {
                         isActive("/profile") ? "active" : ""
                       }`}
                     >
-                      <HStack cursor={"pointer"}>
+                      <HStack
+                        cursor={"pointer"}
+                        display={"flex"}
+                        gap={1}
+                        alignItems={"flex-end"}
+                      >
                         <UserIcon size={20} />
+                        <ChevronDownIcon size={12} />
                       </HStack>
                     </Menu.Trigger>
                     <Portal>
