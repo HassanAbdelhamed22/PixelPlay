@@ -11,18 +11,25 @@ import {
   Drawer,
   DrawerContent,
   useDisclosure,
+  Menu,
+  Portal,
+  InputGroup,
+  Input,
 } from "@chakra-ui/react";
 import type { FlexProps, BoxProps } from "@chakra-ui/react";
 import { FiMenu } from "react-icons/fi";
 import type { IconType } from "react-icons";
-import { Link } from "react-router-dom";
+import { Link, Outlet } from "react-router-dom";
 import CookieService from "../../services/CookieService";
 import {
+  ChevronDownIcon,
   GamepadIcon,
   HeadphonesIcon,
   HomeIcon,
   LogOutIcon,
+  SearchIcon,
   TagIcon,
+  UserIcon,
 } from "lucide-react";
 
 interface LinkItemProps {
@@ -62,7 +69,7 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
     <Box
       transition="3s ease"
       bg={"var(--dark-950)"}
-      borderRightWidth="1px"
+      borderRightWidth="3px"
       borderRightColor={"var(--dark-800)"}
       w={{ base: "full", md: 60 }}
       pos="fixed"
@@ -125,7 +132,7 @@ const NavItem = ({ icon, children, ...rest }: NavItemProps) => {
       {icon && (
         <Icon
           mr="4"
-          fontSize="12"
+          fontSize="16"
           _groupHover={{
             color: "white",
           }}
@@ -141,12 +148,12 @@ const MobileNav = ({ onOpen, ...rest }: MobileProps) => {
   return (
     <Flex
       ml={{ base: 0, md: 60 }}
-      px={{ base: 4, md: 4 }}
+      px={{ base: 4, md: 12 }}
       height="20"
       alignItems="center"
-      // bg={"var(--dark-950)"}
-      // borderBottomWidth="1px"
-      // borderBottomColor={"var(--dark-800)"}
+      bg={"var(--dark-950)"}
+      borderBottomWidth="1px"
+      borderBottomColor={"var(--dark-800)"}
       justifyContent={{ base: "space-between", md: "flex-end" }}
       {...rest}
     >
@@ -158,6 +165,67 @@ const MobileNav = ({ onOpen, ...rest }: MobileProps) => {
       >
         <FiMenu />
       </IconButton>
+
+      <Box display={"flex"} alignItems="center" gap={4}>
+        <HStack gap={2}>
+          <InputGroup
+            maxW="200px"
+            startElement={<SearchIcon size={16} color="gray" />}
+          >
+            <Input
+              placeholder="Search ..."
+              bg="var(--dark-800)"
+              border="1px solid"
+              borderColor="var(--dark-700)"
+              _focus={{
+                borderColor: "var(--primary-400)",
+                boxShadow: "0 0 0 1px var(--chakra-colors-primary-400)",
+              }}
+              size="sm"
+            />
+          </InputGroup>
+        </HStack>
+
+        <HStack gap={{ base: "0", md: "6" }}>
+          <Flex alignItems={"center"}>
+            <Menu.Root>
+              <Menu.Trigger asChild>
+                <HStack
+                  cursor={"pointer"}
+                  display={"flex"}
+                  gap={1}
+                  alignItems={"flex-end"}
+                >
+                  <UserIcon size={20} />
+                  <ChevronDownIcon size={12} />
+                </HStack>
+              </Menu.Trigger>
+              <Portal>
+                <Menu.Positioner>
+                  <Menu.Content bg={"var(--dark-950)"}>
+                    <Link to="/profile">
+                      <Menu.Item value="profile" cursor={"pointer"}>
+                        <UserIcon size={15} />
+                        Profile
+                      </Menu.Item>
+                    </Link>
+                    <Menu.Item
+                      value="logout"
+                      color="fg.error"
+                      _hover={{ bg: "bg.error", color: "fg.error" }}
+                      cursor={"pointer"}
+                      onClick={handleLogout}
+                    >
+                      <LogOutIcon size={15} />
+                      Logout
+                    </Menu.Item>
+                  </Menu.Content>
+                </Menu.Positioner>
+              </Portal>
+            </Menu.Root>
+          </Flex>
+        </HStack>
+      </Box>
     </Flex>
   );
 };
@@ -183,7 +251,7 @@ const SidebarWithHeader = () => {
       {/* mobilenav */}
       <MobileNav onOpen={onOpen} />
       <Box ml={{ base: 0, md: 60 }} p="4">
-        {/* Content */}
+        <Outlet />
       </Box>
     </Box>
   );
