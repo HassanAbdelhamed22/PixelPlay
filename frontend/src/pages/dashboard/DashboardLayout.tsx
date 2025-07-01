@@ -11,26 +11,24 @@ import {
   Drawer,
   DrawerContent,
   useDisclosure,
-  Menu,
-  Portal,
 } from "@chakra-ui/react";
 import type { FlexProps, BoxProps } from "@chakra-ui/react";
-import {
-  FiHome,
-  FiTrendingUp,
-  FiCompass,
-  FiStar,
-  FiSettings,
-  FiMenu,
-} from "react-icons/fi";
+import { FiMenu } from "react-icons/fi";
 import type { IconType } from "react-icons";
 import { Link } from "react-router-dom";
 import CookieService from "../../services/CookieService";
-import { GamepadIcon, LogOutIcon, UserIcon } from "lucide-react";
+import {
+  GamepadIcon,
+  HeadphonesIcon,
+  HomeIcon,
+  LogOutIcon,
+  TagIcon,
+} from "lucide-react";
 
 interface LinkItemProps {
   name: string;
   icon: IconType;
+  to: string;
 }
 
 interface NavItemProps extends FlexProps {
@@ -47,14 +45,12 @@ interface SidebarProps extends BoxProps {
 }
 
 const LinkItems: Array<LinkItemProps> = [
-  { name: "Home", icon: FiHome },
-  { name: "Trending", icon: FiTrendingUp },
-  { name: "Explore", icon: FiCompass },
-  { name: "Favourites", icon: FiStar },
-  { name: "Settings", icon: FiSettings },
+  { name: "Home", to: "/dashboard", icon: HomeIcon },
+  { name: "Games", to: "/dashboard/games", icon: GamepadIcon },
+  { name: "Categories", to: "/dashboard/categories", icon: TagIcon },
+  // { name: "Deals", to: "/deals", icon: TrophyIcon },
+  { name: "Support", to: "/dashboard/support", icon: HeadphonesIcon },
 ];
-
-const isActive = (path: string) => location.pathname === path;
 
 const handleLogout = () => {
   CookieService.remove("jwt");
@@ -65,9 +61,9 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
   return (
     <Box
       transition="3s ease"
-      bg={"gray.900"}
-      borderRight="1px"
-      borderRightColor={"gray.700"}
+      bg={"var(--dark-950)"}
+      borderRightWidth="1px"
+      borderRightColor={"var(--dark-800)"}
       w={{ base: "full", md: 60 }}
       pos="fixed"
       h="full"
@@ -88,43 +84,56 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
         <CloseButton display={{ base: "flex", md: "none" }} onClick={onClose} />
       </Flex>
       {LinkItems.map((link) => (
-        <NavItem key={link.name} icon={link.icon}>
-          {link.name}
-        </NavItem>
+        <Link to={link.to} key={link.name} style={{ textDecoration: "none" }}>
+          <NavItem icon={link.icon}>
+            <Text>{link.name}</Text>
+          </NavItem>
+        </Link>
       ))}
+      {/* Logout button at the end */}
+      <Box position="absolute" bottom="0" w="full" pb={4}>
+        <NavItem
+          icon={LogOutIcon}
+          onClick={handleLogout}
+          _hover={{ bg: "red.500", color: "white" }}
+          transition={"background-color 0.2s, color 0.2s"}
+        >
+          Logout
+        </NavItem>
+      </Box>
     </Box>
   );
 };
 
 const NavItem = ({ icon, children, ...rest }: NavItemProps) => {
   return (
-    <Link to="#" style={{ textDecoration: "none" }}>
-      <Flex
-        align="center"
-        p="4"
-        mx="4"
-        borderRadius="lg"
-        role="group"
-        cursor="pointer"
-        _hover={{
-          bg: "cyan.400",
-          color: "white",
-        }}
-        {...rest}
-      >
-        {icon && (
-          <Icon
-            mr="4"
-            fontSize="16"
-            _groupHover={{
-              color: "white",
-            }}
-            as={icon}
-          />
-        )}
-        {children}
-      </Flex>
-    </Link>
+    <Flex
+      align="center"
+      fontSize={"12"}
+      p="4"
+      mx="4"
+      borderRadius="lg"
+      role="group"
+      cursor="pointer"
+      _hover={{
+        bg: "var(--primary-500)",
+        color: "white",
+      }}
+      transition="background-color 0.2s, color 0.2s"
+      {...rest}
+    >
+      {icon && (
+        <Icon
+          mr="4"
+          fontSize="12"
+          _groupHover={{
+            color: "white",
+          }}
+          as={icon}
+        />
+      )}
+      {children}
+    </Flex>
   );
 };
 
@@ -135,9 +144,9 @@ const MobileNav = ({ onOpen, ...rest }: MobileProps) => {
       px={{ base: 4, md: 4 }}
       height="20"
       alignItems="center"
-      bg={"gray.900"}
-      borderBottomWidth="1px"
-      borderBottomColor={"gray.700"}
+      // bg={"var(--dark-950)"}
+      // borderBottomWidth="1px"
+      // borderBottomColor={"var(--dark-800)"}
       justifyContent={{ base: "space-between", md: "flex-end" }}
       {...rest}
     >
@@ -149,57 +158,6 @@ const MobileNav = ({ onOpen, ...rest }: MobileProps) => {
       >
         <FiMenu />
       </IconButton>
-
-      <HStack gap={2}>
-        <GamepadIcon size={32} color="#22d3ee" />
-        <Text
-          fontSize="2xl"
-          fontWeight="bold"
-          bgClip="text"
-          className="gaming-title gaming-font"
-        >
-          PixelPlay
-        </Text>
-      </HStack>
-
-      <HStack gap={{ base: "0", md: "6" }}>
-        <Flex alignItems={"center"}>
-          <Menu.Root>
-            <Menu.Trigger
-              asChild
-              className={`nav-link-icon ${
-                isActive("/profile") ? "active" : ""
-              }`}
-            >
-              <HStack cursor={"pointer"}>
-                <UserIcon size={20} />
-              </HStack>
-            </Menu.Trigger>
-            <Portal>
-              <Menu.Positioner>
-                <Menu.Content bg={"var(--dark-950)"}>
-                  <Link to="/profile">
-                    <Menu.Item value="profile" cursor={"pointer"}>
-                      <UserIcon size={15} />
-                      Profile
-                    </Menu.Item>
-                  </Link>
-                  <Menu.Item
-                    value="logout"
-                    color="fg.error"
-                    _hover={{ bg: "bg.error", color: "fg.error" }}
-                    cursor={"pointer"}
-                    onClick={handleLogout}
-                  >
-                    <LogOutIcon size={15} />
-                    Logout
-                  </Menu.Item>
-                </Menu.Content>
-              </Menu.Positioner>
-            </Portal>
-          </Menu.Root>
-        </Flex>
-      </HStack>
     </Flex>
   );
 };
@@ -215,10 +173,7 @@ const SidebarWithHeader = () => {
       />
       <Drawer.Root
         open={open}
-        // placement="left"
         onOpenChange={(e) => (e.open ? onOpen() : onClose())}
-        // returnFocusOnClose={false}
-        // onOverlayClick={onClose}
         size="full"
       >
         <DrawerContent>
