@@ -37,13 +37,14 @@ import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../app/store";
-import { addToCart } from "../app/features/cartSlice";
+import { addToCart, updateQuantity } from "../app/features/cartSlice";
 import { toaster } from "../components/ui/toaster";
 import CookieService from "../services/CookieService";
 
 const GameDetails = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { data: loginData } = useSelector((state: RootState) => state.login);
+  const { cartItems } = useSelector((state: RootState) => state.cart);
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [selectedImage, setSelectedImage] = useState(0);
@@ -158,9 +159,10 @@ const GameDetails = () => {
       return;
     }
 
-    if (!data) {
+    const token = CookieService.get("jwt");
+    if (!token) {
       toaster.create({
-        title: "Game data is not loaded yet.",
+        title: "Session expired, please log in again",
         type: "error",
         duration: 3000,
         closable: true,
@@ -168,44 +170,107 @@ const GameDetails = () => {
       return;
     }
 
-    try {
-      const token = CookieService.get("jwt");
-      const response = await axios.post(
-        `${import.meta.env.VITE_SERVER_URL}/api/cart-items`,
-        {
-          data: {
-            quantity: 1,
-            game: data.id,
-            user: loginData.user.id,
-          },
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      // Check if response has the expected structure
-      if (!response.data?.data) {
-        throw new Error("Unexpected API response structure");
-      }
-
-      const cartItem = {
-        id: response.data.data.id,
-        documentId: response.data.data.documentId,
-        quantity: response.data.data.quantity || 1,
-        game: data,
-      };
-
-      dispatch(addToCart(cartItem));
+    // Check if game is already in cart
+    const existingItem = data
+      ? cartItems.find((item) => item.game.id === data.id)
+      : undefined;
+    if (existingItem) {
       toaster.create({
-        title: `${data.title} added to cart successfully`,
-        type: "success",
+        title: `${data?.title ?? "This game"} is already in your cart`,
+        type: "info",
         duration: 3000,
         closable: true,
       });
+      try {
+        const response = await axios.put(
+          `${import.meta.env.VITE_SERVER_URL}/api/cart-items/${
+            existingItem.documentId
+          }`,
+          {
+            data: { quantity: existingItem.quantity + 1 },
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        dispatch(
+          updateQuantity({
+            documentId: response.data.data.documentId,
+            quantity: response.data.data.quantity || existingItem.quantity + 1,
+          })
+        );
+        toaster.create({
+          title:
+            "Quantity updated for " +
+            (data?.title ?? "this game") +
+            ", Please check your cart",
+          type: "success",
+          duration: 2000,
+          closable: true,
+        });
+      } catch (error: any) {
+        console.error("Error updating quantity:", error);
+        toaster.create({
+          title:
+            error.response?.data?.error?.message || "Failed to update quantity",
+          type: "error",
+          duration: 3000,
+          closable: true,
+        });
+      }
+    }
+
+    try {
+      if (!existingItem) {
+        if (!data) {
+          toaster.create({
+            title: "Game data is not available.",
+            type: "error",
+            duration: 3000,
+            closable: true,
+          });
+          return;
+        }
+        const response = await axios.post(
+          `${import.meta.env.VITE_SERVER_URL}/api/cart-items`,
+          {
+            data: {
+              quantity: 1,
+              game: data.id,
+              user: loginData.user.id,
+            },
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!response.data?.data) {
+          throw new Error("Unexpected API response structure");
+        }
+
+        const cartItem = {
+          id: response.data.data.id,
+          documentId: response.data.data.documentId,
+          quantity: response.data.data.quantity || 1,
+          game: data,
+        };
+
+        dispatch(addToCart(cartItem));
+        toaster.create({
+          title: `${data.title} added to cart successfully`,
+          type: "success",
+          duration: 3000,
+          closable: true,
+        });
+      }
     } catch (error: any) {
       console.error("Error adding to cart:", error);
       toaster.create({
