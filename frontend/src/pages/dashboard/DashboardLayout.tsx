@@ -19,7 +19,7 @@ import {
 import type { FlexProps, BoxProps } from "@chakra-ui/react";
 import { FiMenu } from "react-icons/fi";
 import type { IconType } from "react-icons";
-import { Link, Outlet } from "react-router-dom";
+import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
 import CookieService from "../../services/CookieService";
 import {
   ChevronDownIcon,
@@ -31,6 +31,7 @@ import {
   TagIcon,
   UserIcon,
 } from "lucide-react";
+import { toaster } from "../../components/ui/toaster";
 
 interface LinkItemProps {
   name: string;
@@ -59,12 +60,63 @@ const LinkItems: Array<LinkItemProps> = [
   { name: "Support", to: "/dashboard/support", icon: HeadphonesIcon },
 ];
 
-const handleLogout = () => {
-  CookieService.remove("jwt");
-  window.location.reload();
+const SidebarWithHeader = () => {
+  const { open, onOpen, onClose } = useDisclosure();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleLogout = () => {
+    CookieService.remove("jwt");
+    navigate("/login", { replace: true });
+    toaster.create({
+      title: "Logged out successfully",
+      type: "success",
+      duration: 3000,
+      closable: true,
+    });
+  };
+
+  const isActive = (path: string) => location.pathname === path;
+
+  return (
+    <Box minH="100vh" bg={"gray.900"}>
+      <SidebarContent
+        onClose={() => onClose}
+        display={{ base: "none", md: "block" }}
+        isActive={isActive}
+        handleLogout={handleLogout}
+      />
+      <Drawer.Root
+        open={open}
+        onOpenChange={(e) => (e.open ? onOpen() : onClose())}
+        size="full"
+      >
+        <DrawerContent>
+          <SidebarContent
+            onClose={onClose}
+            isActive={isActive}
+            handleLogout={handleLogout}
+          />
+        </DrawerContent>
+      </Drawer.Root>
+      {/* mobilenav */}
+      <MobileNav onOpen={onOpen} />
+      <Box ml={{ base: 0, md: 60 }} p="4" bg={"var(--dark-950)"} minH="100vh">
+        <Outlet />
+      </Box>
+    </Box>
+  );
 };
 
-const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
+const SidebarContent = ({
+  onClose,
+  isActive,
+  handleLogout,
+  ...rest
+}: SidebarProps & {
+  isActive: (path: string) => boolean;
+  handleLogout: () => void;
+}) => {
   return (
     <Box
       transition="3s ease"
@@ -92,7 +144,11 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
       </Flex>
       {LinkItems.map((link) => (
         <Link to={link.to} key={link.name} style={{ textDecoration: "none" }}>
-          <NavItem icon={link.icon}>
+          <NavItem
+            icon={link.icon}
+            bg={isActive(link.to) ? "var(--primary-500)" : undefined}
+            color={isActive(link.to) ? "white" : undefined}
+          >
             <Text>{link.name}</Text>
           </NavItem>
         </Link>
@@ -145,6 +201,20 @@ const NavItem = ({ icon, children, ...rest }: NavItemProps) => {
 };
 
 const MobileNav = ({ onOpen, ...rest }: MobileProps) => {
+  const navigate = useNavigate();
+
+  function handleLogout(event: React.MouseEvent<HTMLDivElement, MouseEvent>): void {
+    event.preventDefault();
+    CookieService.remove("jwt");
+    navigate("/login", { replace: true });
+    toaster.create({
+      title: "Logged out successfully",
+      type: "success",
+      duration: 3000,
+      closable: true,
+    });
+  }
+
   return (
     <Flex
       ml={{ base: 0, md: 60 }}
@@ -227,33 +297,6 @@ const MobileNav = ({ onOpen, ...rest }: MobileProps) => {
         </HStack>
       </Box>
     </Flex>
-  );
-};
-
-const SidebarWithHeader = () => {
-  const { open, onOpen, onClose } = useDisclosure();
-
-  return (
-    <Box minH="100vh" bg={"gray.900"}>
-      <SidebarContent
-        onClose={() => onClose}
-        display={{ base: "none", md: "block" }}
-      />
-      <Drawer.Root
-        open={open}
-        onOpenChange={(e) => (e.open ? onOpen() : onClose())}
-        size="full"
-      >
-        <DrawerContent>
-          <SidebarContent onClose={onClose} />
-        </DrawerContent>
-      </Drawer.Root>
-      {/* mobilenav */}
-      <MobileNav onOpen={onOpen} />
-      <Box ml={{ base: 0, md: 60 }} p="4">
-        <Outlet />
-      </Box>
-    </Box>
   );
 };
 
