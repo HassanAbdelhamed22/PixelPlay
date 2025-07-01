@@ -69,7 +69,7 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
     <Box
       transition="3s ease"
       bg={"var(--dark-950)"}
-      borderRightWidth="3px"
+      borderRightWidth="1px"
       borderRightColor={"var(--dark-800)"}
       w={{ base: "full", md: 60 }}
       pos="fixed"
