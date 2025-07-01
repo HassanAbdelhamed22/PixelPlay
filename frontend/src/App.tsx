@@ -36,6 +36,18 @@ function App() {
 
         <Route path="/dashboard" element={<DashboardLayout />}>
           <Route index element={<AdminDashboard />} />
+          <Route
+            path="games"
+            element={<div>Admin Games Management (Coming Soon)</div>}
+          />
+          <Route
+            path="categories"
+            element={<div>Admin Categories Management (Coming Soon)</div>}
+          />
+          <Route
+            path="support"
+            element={<div>Admin Support Management (Coming Soon)</div>}
+          />
 
           {/* Fallback route for 404 Not Found */}
           <Route path="*" element={<NotFound />} />
