@@ -22,6 +22,7 @@ import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../app/store";
 import { toaster } from "../components/ui/toaster";
 import {
+  clearCart,
   removeFromCart,
   setCartItems,
   updateQuantity,
@@ -198,6 +199,66 @@ const Cart: React.FC = () => {
     }
   };
 
+  // Clear cart
+  const handleClearCart = async () => {
+    if (!loginData?.user?.id) {
+      toaster.create({
+        title: "Please log in to clear cart",
+        type: "error",
+        duration: 3000,
+        closable: true,
+      });
+      return;
+    }
+
+    if (cartItems.length === 0) {
+      toaster.create({
+        title: "Cart is already empty",
+        type: "info",
+        duration: 2000,
+        closable: true,
+      });
+      return;
+    }
+
+    try {
+      const token = CookieService.get("jwt");
+      // Send DELETE request for each cart item
+      await Promise.all(
+        cartItems.map(async (item) => {
+          await axios.delete(
+            `${import.meta.env.VITE_SERVER_URL}/api/cart-items/${
+              item.documentId
+            }`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+        })
+      );
+
+      console.log("Clear Cart: All items deleted");
+
+      dispatch(clearCart());
+      toaster.create({
+        title: "Cart cleared successfully",
+        type: "success",
+        duration: 2000,
+        closable: true,
+      });
+    } catch (error: any) {
+      console.error("Error clearing cart:", error);
+      toaster.create({
+        title: error.response?.data?.error?.message || "Failed to clear cart",
+        type: "error",
+        duration: 3000,
+        closable: true,
+      });
+    }
+  };
+
   // Calculate totals
   const subtotal = cartItems.reduce(
     (sum, item) =>
@@ -281,11 +342,32 @@ const Cart: React.FC = () => {
   return (
     <Box minH="100vh" py={8}>
       <Container maxW="6xl">
-        <Text fontSize="3xl" fontWeight="bold" mb={8}>
-          <Text as="span" bgClip="text" className="gaming-title">
-            Shopping Cart
+        <Box
+          mb={8}
+          display={"flex"}
+          alignItems="center"
+          justifyContent="space-between"
+          flexWrap="wrap"
+        >
+          <Text fontSize="3xl" fontWeight="bold">
+            <Text as="span" bgClip="text" className="gaming-title">
+              Shopping All
+            </Text>
           </Text>
-        </Text>
+          {/* clear all */}
+          <Button
+            variant="ghost"
+            color="red.400"
+            size="sm"
+            bg="var(--dark-800)"
+            onClick={handleClearCart}
+            _hover={{ color: "red.500", bg: "var(--dark-700)", scale: 1.05 }}
+            transition={"all 0.2s ease-in-out"}
+          >
+            <TrashIcon size={20} />
+            Clear Cart
+          </Button>
+        </Box>
 
         <Grid templateColumns={{ base: "1fr", lg: "2fr 1fr" }} gap={8}>
           <GridItem>
