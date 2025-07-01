@@ -9,6 +9,8 @@ import { Toaster } from "./components/ui/toaster";
 import AppLayout from "./layout/AppLayout";
 import { token } from "./constant";
 import Cart from "./pages/Cart";
+import AdminDashboard from "./pages/dashboard/Index";
+import DashboardLayout from "./pages/dashboard/DashboardLayout";
 
 function App() {
   return (
@@ -27,6 +29,13 @@ function App() {
             path="/login"
             element={<LoginPage isAuthenticated={token} />}
           />
+
+          {/* Fallback route for 404 Not Found */}
+          <Route path="*" element={<NotFound />} />
+        </Route>
+
+        <Route path="/dashboard" element={<DashboardLayout />}>
+          <Route index element={<AdminDashboard />} />
 
           {/* Fallback route for 404 Not Found */}
           <Route path="*" element={<NotFound />} />
