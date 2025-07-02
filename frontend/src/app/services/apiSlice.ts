@@ -4,6 +4,8 @@ import { token } from "../../constant";
 export const apiSlice = createApi({
   reducerPath: "api",
   tagTypes: ["Games"],
+  refetchOnReconnect: true,
+  refetchOnMountOrArgChange: true,
   baseQuery: fetchBaseQuery({
     baseUrl: import.meta.env.VITE_SERVER_URL,
     prepareHeaders: (headers) => {
