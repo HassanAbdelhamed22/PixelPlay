@@ -1,0 +1,29 @@
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { token } from "../../constant";
+
+export const apiSlice = createApi({
+  reducerPath: "api",
+  tagTypes: ["Games"],
+  baseQuery: fetchBaseQuery({
+    baseUrl: import.meta.env.VITE_SERVER_URL,
+    prepareHeaders: (headers) => {
+      if (token) {
+        headers.set("Authorization", `Bearer ${token}`);
+      }
+      return headers;
+    },
+  }),
+  endpoints: (builder) => ({
+    getDashboardGames: builder.query({
+      query: (arg) => {
+        const { page } = arg;
+        return {
+          url: `/api/games?populate[thumbnail]=true&populate[images]=true&populate[genres]=true&pagination[page]=${page}&pagination[pageSize]=10`,
+        };
+      },
+      providesTags: ["Games"],
+    }),
+  }),
+});
+
+export const { useGetDashboardGamesQuery } = apiSlice;
