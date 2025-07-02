@@ -1,33 +1,40 @@
-import { Box, Flex, Skeleton, Stack } from "@chakra-ui/react";
+import { Flex, Skeleton, Stack } from "@chakra-ui/react";
 
 const DashboardGamesTableSkeleton = () => {
   return (
-    <Stack maxW={"85%"} mx={"auto"} my={"10"}>
+    <Stack gap="10" maxW={"100%"} mx={8} my={"10"}>
       {Array.from({ length: 10 }).map((_, index) => (
         <Flex
           key={index}
           alignItems={"center"}
           justifyContent={"space-between"}
           border={"1px solid var(--dark-700)"}
-          h={"50px"}
+          h={"70px"}
           rounded={"md"}
           p={2}
         >
-          <Skeleton h={"9px"} w={"120px"} bg={"var(--dark-800)"} />
-          <Skeleton h={"9px"} w={"120px"} bg={"var(--dark-800)"} />
-          <Skeleton h={"9px"} w={"120px"} bg={"var(--dark-800)"} />
-          <Skeleton h={"9px"} w={"120px"} bg={"var(--dark-800)"} />
-          <Skeleton h={"9px"} w={"120px"} bg={"var(--dark-800)"} />
-          <Skeleton h={"9px"} w={"120px"} bg={"var(--dark-800)"} />
+          <Skeleton h={"9px"} w={"20px"} bg={"var(--dark-800)"} />
+          <Skeleton h={"9px"} w={"60px"} bg={"var(--dark-800)"} />
+          <Skeleton h={"9px"} w={"60px"} bg={"var(--dark-800)"} />
+          <Skeleton
+            h={"60px"}
+            w={"60px"}
+            bg={"var(--dark-800)"}
+            rounded={"md"}
+          />
+          <Skeleton h={"9px"} w={"60px"} bg={"var(--dark-800)"} />
+          <Skeleton h={"9px"} w={"60px"} bg={"var(--dark-800)"} />
+          <Skeleton h={"9px"} w={"60px"} bg={"var(--dark-800)"} />
+          <Skeleton h={"9px"} w={"60px"} bg={"var(--dark-800)"} />
+          <Skeleton h={"9px"} w={"60px"} bg={"var(--dark-800)"} />
+          <Skeleton h={"9px"} w={"60px"} bg={"var(--dark-800)"} />
           <Flex>
-            <Skeleton h={"30px"} w={"50px"} bg={"red.400"} mr={4} />
-            <Skeleton h={"30px"} w={"50px"} bg={"blue.400"} />
+            <Skeleton h={"30px"} w={"40px"} bg={"purple.300"} mr={4} />
+            <Skeleton h={"30px"} w={"40px"} bg={"blue.300"} mr={4} />
+            <Skeleton h={"30px"} w={"40px"} bg={"red.300"} />
           </Flex>
         </Flex>
       ))}
-      <Box>
-        <Skeleton h={"15px"} w={"250px"} bg={"var(--dark-800)"} mx={"auto"} />
-      </Box>
     </Stack>
   );
 };
