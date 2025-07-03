@@ -170,7 +170,15 @@ const DashboardGamesTable = () => {
           </Table.Body>
         </Table.Root>
       </Stack>
-      <AlertDialog isOpen={open} onOpen={onOpen} onClose={onClose} />
+      <AlertDialog
+        isOpen={open}
+        onOpen={onOpen}
+        onClose={onClose}
+        title="Delete Game"
+        description="Are you sure you want to delete this game? This action cannot be undone."
+        cancelText="Cancel"
+        confirmText="Delete"
+      />
     </>
   );
 };
