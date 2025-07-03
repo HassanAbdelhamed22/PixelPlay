@@ -12,15 +12,38 @@ import {
   useDisclosure,
 } from "@chakra-ui/react";
 import DashboardGamesTableSkeleton from "./DashboardGamesTableSkeleton";
-import { useGetDashboardGamesQuery } from "../app/services/games";
+import {
+  useDeleteGameMutation,
+  useGetDashboardGamesQuery,
+} from "../app/services/games";
 import { AlertTriangleIcon, Eye, PenIcon, TrashIcon } from "lucide-react";
 import type { Game } from "../types";
 import { Link } from "react-router-dom";
 import AlertDialog from "../shared/AlertDialog";
+import { useEffect, useState } from "react";
+import { toaster } from "./ui/toaster";
 
 const DashboardGamesTable = () => {
   const { open, onOpen, onClose } = useDisclosure();
   const { isLoading, data, error } = useGetDashboardGamesQuery({ page: 1 });
+  const [deleteGame, { isLoading: isDeleting, isSuccess }] =
+    useDeleteGameMutation();
+  const [clickedGameId, setClickedGameId] = useState<string | undefined>(
+    undefined
+  );
+
+  useEffect(() => {
+    if (isSuccess) {
+      onClose();
+      setClickedGameId(undefined);
+      toaster.create({
+        title: "Game deleted successfully",
+        type: "success",
+        duration: 3000,
+        closable: true,
+      });
+    }
+  }, [isSuccess, onClose]);
 
   if (isLoading) return <DashboardGamesTableSkeleton />;
 
@@ -159,7 +182,10 @@ const DashboardGamesTable = () => {
                       color="gray.900"
                       size="xs"
                       variant={"solid"}
-                      onClick={() => onOpen()}
+                      onClick={() => {
+                        onOpen();
+                        setClickedGameId(item.documentId);
+                      }}
                     >
                       <TrashIcon size={16} />
                     </Button>
@@ -178,6 +204,10 @@ const DashboardGamesTable = () => {
         description="Are you sure you want to delete this game? This action cannot be undone."
         cancelText="Cancel"
         confirmText="Delete"
+        isLoading={isDeleting}
+        onConfirmHandler={() => {
+          deleteGame(clickedGameId);
+        }}
       />
     </>
   );
