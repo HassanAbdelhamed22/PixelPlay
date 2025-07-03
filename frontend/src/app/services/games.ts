@@ -29,6 +29,10 @@ export const gamesApiSlice = createApi({
       query: (id) => ({
         url: `/api/games/${id}`,
         method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
       }),
     }),
   }),
