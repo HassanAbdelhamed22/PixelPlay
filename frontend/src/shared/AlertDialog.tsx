@@ -1,12 +1,25 @@
 import { Button, CloseButton, Dialog, HStack, Portal } from "@chakra-ui/react";
+import { AlertCircleIcon } from "lucide-react";
 
 interface AlertDialogProps {
   isOpen: boolean;
   onOpen: (open: boolean) => void;
   onClose: () => void;
+  title: string;
+  description: string;
+  cancelText?: string;
+  confirmText?: string;
 }
 
-const AlertDialog = ({ isOpen, onOpen, onClose }: AlertDialogProps) => {
+const AlertDialog = ({
+  isOpen,
+  onOpen,
+  onClose,
+  title,
+  description,
+  cancelText = "Cancel",
+  confirmText = "Confirm",
+}: AlertDialogProps) => {
   return (
     <HStack wrap="wrap" gap="4">
       <Dialog.Root
@@ -22,29 +35,30 @@ const AlertDialog = ({ isOpen, onOpen, onClose }: AlertDialogProps) => {
         closeOnEscape={true}
         closeOnInteractOutside={true}
       >
-        <Dialog.Trigger asChild>
-          <Button variant="outline">Open Dialog </Button>
-        </Dialog.Trigger>
         <Portal>
           <Dialog.Backdrop />
           <Dialog.Positioner>
-            <Dialog.Content>
+            <Dialog.Content bg="var(--dark-900)">
               <Dialog.Header>
-                <Dialog.Title>Dialog Title</Dialog.Title>
+                <Dialog.Title>
+                  <HStack>
+                    <AlertCircleIcon size={24} color="red" />
+                    <span>{title}</span>
+                  </HStack>
+                </Dialog.Title>
               </Dialog.Header>
               <Dialog.Body>
-                <p>
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed
-                  do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-                </p>
+                <p>{description}</p>
               </Dialog.Body>
               <Dialog.Footer>
                 <Dialog.ActionTrigger asChild>
                   <Button variant="outline" onClick={onClose}>
-                    Cancel
+                    {cancelText}
                   </Button>
                 </Dialog.ActionTrigger>
-                <Button>Save</Button>
+                <Button bg={"red.500"} color={"white"}>
+                  {confirmText}
+                </Button>
               </Dialog.Footer>
               <Dialog.CloseTrigger asChild>
                 <CloseButton size="sm" />
