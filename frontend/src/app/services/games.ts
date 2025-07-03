@@ -1,7 +1,7 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { token } from "../../constant";
 
-export const apiSlice = createApi({
+export const gamesApiSlice = createApi({
   reducerPath: "api",
   tagTypes: ["Games"],
   refetchOnReconnect: true,
@@ -25,7 +25,14 @@ export const apiSlice = createApi({
       },
       providesTags: ["Games"],
     }),
+    deleteGame: builder.mutation({
+      query: (id) => ({
+        url: `/api/games/${id}`,
+        method: "DELETE",
+      }),
+    }),
   }),
 });
 
-export const { useGetDashboardGamesQuery } = apiSlice;
+export const { useGetDashboardGamesQuery, useDeleteGameMutation } =
+  gamesApiSlice;
