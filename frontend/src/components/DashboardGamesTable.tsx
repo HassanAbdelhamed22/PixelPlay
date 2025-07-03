@@ -12,7 +12,7 @@ import {
   useDisclosure,
 } from "@chakra-ui/react";
 import DashboardGamesTableSkeleton from "./DashboardGamesTableSkeleton";
-import { useGetDashboardGamesQuery } from "../app/services/apiSlice";
+import { useGetDashboardGamesQuery } from "../app/services/games";
 import { AlertTriangleIcon, Eye, PenIcon, TrashIcon } from "lucide-react";
 import type { Game } from "../types";
 import { Link } from "react-router-dom";
