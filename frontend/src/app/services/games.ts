@@ -23,7 +23,16 @@ export const gamesApiSlice = createApi({
           url: `/api/games?populate[thumbnail]=true&populate[images]=true&populate[genres]=true&pagination[page]=${page}&pagination[pageSize]=10`,
         };
       },
-      providesTags: ["Games"],
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.data.map(({ id }: { id: number | string }) => ({
+                type: "Games",
+                id,
+              })),
+              { type: "Games", id: "LIST" },
+            ]
+          : [{ type: "Games", id: "LIST" }],
     }),
     deleteGame: builder.mutation({
       query: (id) => ({
@@ -34,6 +43,7 @@ export const gamesApiSlice = createApi({
           Authorization: `Bearer ${token}`,
         },
       }),
+      invalidatesTags: [{ type: "Games", id: "LIST" }],
     }),
   }),
 });
