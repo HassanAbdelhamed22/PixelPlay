@@ -10,6 +10,8 @@ import {
   Button,
   Badge,
   useDisclosure,
+  Field,
+  Input,
 } from "@chakra-ui/react";
 import DashboardGamesTableSkeleton from "./DashboardGamesTableSkeleton";
 import {
@@ -22,9 +24,15 @@ import { Link } from "react-router-dom";
 import AlertDialog from "../shared/AlertDialog";
 import { useEffect, useState } from "react";
 import { toaster } from "./ui/toaster";
+import CustomModal from "../shared/Modal";
 
 const DashboardGamesTable = () => {
   const { open, onOpen, onClose } = useDisclosure();
+  const {
+    open: modalOpen,
+    onOpen: modalOnOpen,
+    onClose: modalOnClose,
+  } = useDisclosure();
   const { isLoading, data, error } = useGetDashboardGamesQuery({ page: 1 });
   const [deleteGame, { isLoading: isDeleting, isSuccess }] =
     useDeleteGameMutation();
@@ -174,6 +182,10 @@ const DashboardGamesTable = () => {
                       color="gray.900"
                       size="xs"
                       variant={"solid"}
+                      onClick={() => {
+                        modalOnOpen();
+                        setClickedGameId(item.documentId);
+                      }}
                     >
                       <PenIcon size={16} />
                     </Button>
@@ -209,6 +221,22 @@ const DashboardGamesTable = () => {
           deleteGame(clickedGameId);
         }}
       />
+
+      <CustomModal
+        isOpen={modalOpen}
+        onOpen={modalOnOpen}
+        onClose={modalOnClose}
+        title="Update Game"
+      >
+        <Field.Root>
+          <Field.Label>First Name</Field.Label>
+          <Input placeholder="First Name" />
+        </Field.Root>
+        <Field.Root>
+          <Field.Label>Last Name</Field.Label>
+          <Input placeholder="Focus First" />
+        </Field.Root>
+      </CustomModal>
     </>
   );
 };
