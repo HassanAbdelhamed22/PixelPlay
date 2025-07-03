@@ -9,6 +9,8 @@ interface AlertDialogProps {
   description: string;
   cancelText?: string;
   confirmText?: string;
+  isLoading?: boolean;
+  onConfirmHandler?: () => void;
 }
 
 const AlertDialog = ({
@@ -19,6 +21,8 @@ const AlertDialog = ({
   description,
   cancelText = "Cancel",
   confirmText = "Confirm",
+  isLoading = false,
+  onConfirmHandler = () => {},
 }: AlertDialogProps) => {
   return (
     <HStack wrap="wrap" gap="4">
@@ -56,7 +60,12 @@ const AlertDialog = ({
                     {cancelText}
                   </Button>
                 </Dialog.ActionTrigger>
-                <Button bg={"red.500"} color={"white"}>
+                <Button
+                  bg={"red.500"}
+                  color={"white"}
+                  onClick={onConfirmHandler}
+                  loading={isLoading}
+                >
                   {confirmText}
                 </Button>
               </Dialog.Footer>
