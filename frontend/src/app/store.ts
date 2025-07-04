@@ -2,6 +2,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import loginSlice from "./features/loginSlice";
 import cartSlice from "./features/cartSlice";
 import { gamesApiSlice } from "./services/games";
+import { genresApiSlice } from "./services/genres";
 
 // Define the root state type
 export type RootState = ReturnType<typeof store.getState>;
@@ -14,9 +15,10 @@ export const store = configureStore({
     login: loginSlice,
     cart: cartSlice,
     [gamesApiSlice.reducerPath]: gamesApiSlice.reducer,
+    [genresApiSlice.reducerPath]: genresApiSlice.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      serializableCheck: false, // Disable serializable check for non-serializable data
-    }).concat(gamesApiSlice.middleware),
+      serializableCheck: false,
+    }).concat(gamesApiSlice.middleware, genresApiSlice.middleware),
 });
