@@ -22,3 +22,8 @@ export interface Game {
   videoTrailer?: { url: string; name: string } | null;
   genres: { id: string; title: string }[];
 }
+
+export interface Genre {
+  id: string;
+  title: string;
+}
