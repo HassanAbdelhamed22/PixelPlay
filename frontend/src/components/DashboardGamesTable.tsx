@@ -14,6 +14,7 @@ import {
   Input,
   FileUpload,
   Flex,
+  Textarea,
 } from "@chakra-ui/react";
 import DashboardGamesTableSkeleton from "./DashboardGamesTableSkeleton";
 import {
@@ -54,6 +55,20 @@ const DashboardGamesTable = () => {
   const [clickedGameId, setClickedGameId] = useState<string | undefined>(
     undefined
   );
+  const [gameToEdit, setGameToEdit] = useState<Game | null>(null);
+
+  const onChangeHandler = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setGameToEdit((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        [name]: value,
+      };
+    });
+  };
 
   useEffect(() => {
     if (isSuccess) {
@@ -232,6 +247,7 @@ const DashboardGamesTable = () => {
                       size="xs"
                       variant={"solid"}
                       onClick={() => {
+                        setGameToEdit(item);
                         modalOnOpen();
                         setClickedGameId(item.documentId);
                       }}
@@ -257,6 +273,7 @@ const DashboardGamesTable = () => {
           </Table.Body>
         </Table.Root>
       </Stack>
+      {console.log("Game to Edit:", gameToEdit)}
       <AlertDialog
         isOpen={open}
         onOpen={onOpen}
@@ -280,30 +297,64 @@ const DashboardGamesTable = () => {
       >
         <Field.Root>
           <Field.Label>Title</Field.Label>
-          <Input placeholder="Title" />
+          <Input
+            placeholder="Title"
+            value={gameToEdit?.title}
+            name="title"
+            onChange={onChangeHandler}
+          />
         </Field.Root>
         <Field.Root>
           <Field.Label>Description</Field.Label>
-          <Input placeholder="Description" />
+          <Textarea
+            placeholder="Description"
+            value={gameToEdit?.description}
+            autoresize
+            name="description"
+            onChange={onChangeHandler}
+          />
         </Field.Root>
         <Flex gap={2}>
           <Field.Root>
             <Field.Label>Price</Field.Label>
-            <Input placeholder="Price" type="number" />
+            <Input
+              placeholder="Price"
+              type="number"
+              value={gameToEdit?.price}
+              name="price"
+              onChange={onChangeHandler}
+            />
           </Field.Root>
           <Field.Root>
             <Field.Label>Discount Percentage</Field.Label>
-            <Input placeholder="Discount Percentage" type="number" />
+            <Input
+              placeholder="Discount Percentage"
+              type="number"
+              value={gameToEdit?.discountPercentage ?? ""}
+              name="discountPercentage"
+              onChange={onChangeHandler}
+            />
           </Field.Root>
         </Flex>
         <Flex gap={2}>
           <Field.Root>
             <Field.Label>Stock</Field.Label>
-            <Input placeholder="Stock" type="number" />
+            <Input
+              placeholder="Stock"
+              type="number"
+              value={gameToEdit?.stock}
+              name="stock"
+              onChange={onChangeHandler}
+            />
           </Field.Root>
           <Field.Root>
             <Field.Label>Platform</Field.Label>
-            <Input placeholder="Platform" />
+            <Input
+              placeholder="Platform"
+              value={gameToEdit?.platform}
+              name="platform"
+              onChange={onChangeHandler}
+            />
           </Field.Root>
         </Flex>
         <MultiSelectCombobox
@@ -314,7 +365,9 @@ const DashboardGamesTable = () => {
           onSelectionChange={(selectedItems) => {
             console.log("Selected genres:", selectedItems);
           }}
-          
+          defaultSelectedItems={
+            gameToEdit?.genres.map((genre) => genre.title) || []
+          }
         />
         <Flex gap={2}>
           <FileUpload.Root accept={["image/*"]} maxFiles={1}>
