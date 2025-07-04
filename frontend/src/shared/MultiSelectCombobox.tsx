@@ -49,8 +49,6 @@ const MultiSelectCombobox = ({
       item.label.toLowerCase().includes(searchValue.toLowerCase())
     );
 
-    console.log("Filtered Items:", filtered);
-
     return createListCollection({
       items: filtered.map((item) => ({
         label: item.label,
@@ -60,7 +58,6 @@ const MultiSelectCombobox = ({
   }, [items, searchValue]);
 
   const handleValueChange = (details: Combobox.ValueChangeDetails) => {
-    console.log("Selected Items:", details.value);
     setSelectedItems(details.value);
     onSelectionChange?.(details.value);
   };
@@ -74,7 +71,6 @@ const MultiSelectCombobox = ({
         collection={collection}
         onValueChange={handleValueChange}
         onInputValueChange={(details) => {
-          console.log("Search Value:", details.inputValue);
           setSearchValue(details.inputValue);
         }}
       >
