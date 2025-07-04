@@ -12,19 +12,29 @@ import {
   useDisclosure,
   Field,
   Input,
+  FileUpload,
+  Flex,
 } from "@chakra-ui/react";
 import DashboardGamesTableSkeleton from "./DashboardGamesTableSkeleton";
 import {
   useDeleteGameMutation,
   useGetDashboardGamesQuery,
 } from "../app/services/games";
-import { AlertTriangleIcon, Eye, PenIcon, TrashIcon } from "lucide-react";
-import type { Game } from "../types";
+import {
+  AlertTriangleIcon,
+  Eye,
+  PenIcon,
+  TrashIcon,
+  UploadIcon,
+} from "lucide-react";
+import type { Game, Genre } from "../types";
 import { Link } from "react-router-dom";
 import AlertDialog from "../shared/AlertDialog";
 import { useEffect, useState } from "react";
 import { toaster } from "./ui/toaster";
 import CustomModal from "../shared/Modal";
+import { useGetGenresQuery } from "../app/services/genres";
+import MultiSelectCombobox from "../shared/MultiSelectCombobox";
 
 const DashboardGamesTable = () => {
   const { open, onOpen, onClose } = useDisclosure();
@@ -36,6 +46,11 @@ const DashboardGamesTable = () => {
   const { isLoading, data, error } = useGetDashboardGamesQuery({ page: 1 });
   const [deleteGame, { isLoading: isDeleting, isSuccess }] =
     useDeleteGameMutation();
+  const {
+    data: genres,
+    isLoading: isGenresLoading,
+    error: genresError,
+  } = useGetGenresQuery({});
   const [clickedGameId, setClickedGameId] = useState<string | undefined>(
     undefined
   );
@@ -82,6 +97,40 @@ const DashboardGamesTable = () => {
       </Box>
     );
   }
+
+  console.log("Games Data:", data.data);
+
+  // Use all genres from the genres API, not just those assigned to games
+  const genreItems = Array.from(
+    new Set(
+      (genres?.data || []).map((genre: Genre) => genre.title).filter(Boolean)
+    )
+  );
+
+  console.log("Genre Items:", genreItems);
+  // Handle genres loading and error states
+  if (isGenresLoading) {
+    return <Box p={6}>Loading genres...</Box>;
+  }
+
+  if (genresError) {
+    return (
+      <Alert.Root status="error" borderRadius="md" m={6}>
+        <AlertTriangleIcon />
+        <Box>
+          <AlertTitle>Failed to load genres</AlertTitle>
+          <AlertDescription>
+            {genresError && "status" in genresError
+              ? `Error ${genresError.status}: ${
+                  (genresError as any).data?.error?.message || "Unknown error"
+                }`
+              : "An unexpected error occurred while loading genres"}
+          </AlertDescription>
+        </Box>
+      </Alert.Root>
+    );
+  }
+
   return (
     <>
       <Stack gap="10" maxW={"100%"} mx={"8"} my={"8"} borderRadius={"md"}>
@@ -227,15 +276,78 @@ const DashboardGamesTable = () => {
         onOpen={modalOnOpen}
         onClose={modalOnClose}
         title="Update Game"
+        confirmText="Update"
       >
         <Field.Root>
-          <Field.Label>First Name</Field.Label>
-          <Input placeholder="First Name" />
+          <Field.Label>Title</Field.Label>
+          <Input placeholder="Title" />
         </Field.Root>
         <Field.Root>
-          <Field.Label>Last Name</Field.Label>
-          <Input placeholder="Focus First" />
+          <Field.Label>Description</Field.Label>
+          <Input placeholder="Description" />
         </Field.Root>
+        <Flex gap={2}>
+          <Field.Root>
+            <Field.Label>Price</Field.Label>
+            <Input placeholder="Price" type="number" />
+          </Field.Root>
+          <Field.Root>
+            <Field.Label>Discount Percentage</Field.Label>
+            <Input placeholder="Discount Percentage" type="number" />
+          </Field.Root>
+        </Flex>
+        <Flex gap={2}>
+          <Field.Root>
+            <Field.Label>Stock</Field.Label>
+            <Input placeholder="Stock" type="number" />
+          </Field.Root>
+          <Field.Root>
+            <Field.Label>Platform</Field.Label>
+            <Input placeholder="Platform" />
+          </Field.Root>
+        </Flex>
+        <MultiSelectCombobox
+          label="Genres"
+          items={genreItems as string[]}
+          placeholder="Select genres"
+          emptyMessage="No genres found"
+          onSelectionChange={(selectedItems) => {
+            console.log("Selected genres:", selectedItems);
+          }}
+          
+        />
+        <Flex gap={2}>
+          <FileUpload.Root accept={["image/*"]} maxFiles={1}>
+            <FileUpload.HiddenInput />
+            <FileUpload.Label>Thumbnail</FileUpload.Label>
+            <FileUpload.Trigger asChild>
+              <Button variant="outline" size="sm">
+                <UploadIcon /> Upload file
+              </Button>
+            </FileUpload.Trigger>
+            <FileUpload.List />
+          </FileUpload.Root>
+          <FileUpload.Root maxFiles={5} accept={["image/*"]}>
+            <FileUpload.HiddenInput />
+            <FileUpload.Label>Images</FileUpload.Label>
+            <FileUpload.Trigger asChild>
+              <Button variant="outline" size="sm">
+                <UploadIcon /> Upload file
+              </Button>
+            </FileUpload.Trigger>
+            <FileUpload.List showSize clearable />
+          </FileUpload.Root>
+        </Flex>
+        <FileUpload.Root accept={["video/*"]} maxFiles={1}>
+          <FileUpload.HiddenInput />
+          <FileUpload.Label>Video Trailer</FileUpload.Label>
+          <FileUpload.Trigger asChild>
+            <Button variant="outline" size="sm">
+              <UploadIcon /> Upload file
+            </Button>
+          </FileUpload.Trigger>
+          <FileUpload.List />
+        </FileUpload.Root>
       </CustomModal>
     </>
   );
