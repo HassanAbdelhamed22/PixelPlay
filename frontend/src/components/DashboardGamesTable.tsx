@@ -20,6 +20,7 @@ import DashboardGamesTableSkeleton from "./DashboardGamesTableSkeleton";
 import {
   useDeleteGameMutation,
   useGetDashboardGamesQuery,
+  useUpdateGameMutation,
 } from "../app/services/games";
 import {
   AlertTriangleIcon,
@@ -44,9 +45,15 @@ const DashboardGamesTable = () => {
     onOpen: modalOnOpen,
     onClose: modalOnClose,
   } = useDisclosure();
-  const { isLoading, data, error } = useGetDashboardGamesQuery({ page: 1 });
+  const {
+    isLoading,
+    data: gamesData,
+    error,
+  } = useGetDashboardGamesQuery({ page: 1 });
   const [deleteGame, { isLoading: isDeleting, isSuccess }] =
     useDeleteGameMutation();
+  const [updateGame, { isLoading: isUpdating, isSuccess: isUpdateSuccess }] =
+    useUpdateGameMutation();
   const {
     data: genres,
     isLoading: isGenresLoading,
@@ -70,18 +77,161 @@ const DashboardGamesTable = () => {
     });
   };
 
+  const onChangeGenresHandler = (selectedItems: string[]) => {
+    setGameToEdit((prev) => {
+      if (!prev) return prev;
+      // Find the full genre objects from the genres list
+      const selectedGenres =
+        (genres?.data || [])
+          .filter((genre: Genre) => selectedItems.includes(genre.title))
+          .map((genre: Genre) => ({ id: genre.id, title: genre.title })) || [];
+      return {
+        ...prev,
+        genres: selectedGenres,
+      };
+    });
+  };
+
+  const onChangeThumbnailHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && gameToEdit) {
+      setGameToEdit((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          thumbnail: file,
+        };
+      });
+    }
+  };
+
+  const onChangeImagesHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0 && gameToEdit) {
+      setGameToEdit((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          images: files.map((file) => ({
+            url: URL.createObjectURL(file),
+            name: file.name,
+          })),
+        };
+      });
+    }
+  };
+
+  const onChangeVideoHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && gameToEdit) {
+      setGameToEdit((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          videoTrailer: {
+            url: URL.createObjectURL(file),
+            name: file.name,
+          },
+        };
+      });
+    }
+  };
+
+  const onSubmitHandler = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    console.log("Submitting game edit:", gameToEdit);
+
+    if (!gameToEdit) return;
+
+    const gameData = {
+      title: gameToEdit.title,
+      description: gameToEdit.description,
+      price: gameToEdit.price,
+      discountPercentage: gameToEdit.discountPercentage,
+      stock: gameToEdit.stock,
+      platform: gameToEdit.platform,
+      genres: gameToEdit.genres.map((genre) => genre.id), // Use genre IDs
+      developer: gameToEdit.developer,
+    };
+
+    // Check if we have any files to upload
+    const hasFiles =
+      gameToEdit.thumbnail instanceof File ||
+      gameToEdit.videoTrailer instanceof File ||
+      (gameToEdit.images &&
+        gameToEdit.images.some((img) => img instanceof File));
+
+    if (hasFiles) {
+      // Use FormData for file uploads
+      const formData = new FormData();
+      formData.append("data", JSON.stringify(gameData));
+
+      // Handle thumbnail
+      if (gameToEdit.thumbnail instanceof File) {
+        formData.append("files.thumbnail", gameToEdit.thumbnail);
+      }
+
+      // Handle video trailer
+      if (gameToEdit.videoTrailer instanceof File) {
+        formData.append("files.videoTrailer", gameToEdit.videoTrailer);
+      }
+
+      // Handle images
+      if (gameToEdit.images && Array.isArray(gameToEdit.images)) {
+        gameToEdit.images.forEach((image) => {
+          if (image instanceof File) {
+            formData.append("files.images", image);
+          }
+        });
+      }
+
+      console.log("Sending FormData with files");
+      updateGame({
+        id: gameToEdit.documentId,
+        data: formData,
+        hasFiles: true,
+      });
+    } else {
+      // Send regular JSON data without files
+      console.log("Sending JSON data without files");
+      updateGame({
+        id: gameToEdit.documentId,
+        data: gameData,
+        hasFiles: false,
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (isUpdateSuccess) {
+      modalOnClose();
+      setGameToEdit(null);
+      setClickedGameId(undefined);
+      setTimeout(() => {
+        toaster.create({
+          title: "Game updated successfully",
+          type: "success",
+          duration: 3000,
+          closable: true,
+        });
+      }, 0);
+    }
+  }, [isUpdateSuccess]);
+
   useEffect(() => {
     if (isSuccess) {
       onClose();
       setClickedGameId(undefined);
-      toaster.create({
-        title: "Game deleted successfully",
-        type: "success",
-        duration: 3000,
-        closable: true,
-      });
+      setTimeout(() => {
+        toaster.create({
+          title: "Game deleted successfully",
+          type: "success",
+          duration: 3000,
+          closable: true,
+        });
+      }, 0);
     }
-  }, [isSuccess, onClose]);
+  }, [isSuccess]);
 
   if (isLoading) return <DashboardGamesTableSkeleton />;
 
@@ -103,17 +253,18 @@ const DashboardGamesTable = () => {
     );
   }
 
-  if (!data || data.length === 0) {
+  if (!gamesData || !Array.isArray(gamesData.data)) {
+    console.log("Invalid data structure:", gamesData);
     return (
       <Box p={6} textAlign="center">
         <Text fontSize="xl" color="gray.400">
-          No games found.
+          No valid game data found.
         </Text>
       </Box>
     );
   }
 
-  console.log("Games Data:", data.data);
+  console.log("Games gamesData:", gamesData.data);
 
   // Use all genres from the genres API, not just those assigned to games
   const genreItems = Array.from(
@@ -181,7 +332,7 @@ const DashboardGamesTable = () => {
             </Table.Row>
           </Table.Header>
           <Table.Body>
-            {data?.data?.map((item: Game) => (
+            {gamesData?.data?.map((item: Game) => (
               <Table.Row key={item.id}>
                 <Table.Cell>{item.id}</Table.Cell>
                 <Table.Cell>{item.title}</Table.Cell>
@@ -247,7 +398,20 @@ const DashboardGamesTable = () => {
                       size="xs"
                       variant={"solid"}
                       onClick={() => {
-                        setGameToEdit(item);
+                        setGameToEdit({
+                          ...item,
+                          thumbnail: { url: "", name: "" },
+                          images: [],
+                          videoTrailer: null,
+                          title: item.title || "",
+                          description: item.description || "",
+                          price: item.price || 0,
+                          discountPercentage: item.discountPercentage || 0,
+                          stock: item.stock || 0,
+                          platform: item.platform || "",
+                          developer: item.developer || "",
+                          genres: item.genres || [],
+                        });
                         modalOnOpen();
                         setClickedGameId(item.documentId);
                       }}
@@ -294,85 +458,120 @@ const DashboardGamesTable = () => {
         onClose={modalOnClose}
         title="Update Game"
         confirmText="Update"
+        isLoading={isUpdating}
       >
-        <Field.Root>
-          <Field.Label>Title</Field.Label>
-          <Input
-            placeholder="Title"
-            value={gameToEdit?.title}
-            name="title"
-            onChange={onChangeHandler}
+        <form id="game-update-form" onSubmit={onSubmitHandler}>
+          <Field.Root>
+            <Field.Label>Title</Field.Label>
+            <Input
+              placeholder="Title"
+              value={gameToEdit?.title}
+              name="title"
+              onChange={onChangeHandler}
+            />
+          </Field.Root>
+          <Field.Root>
+            <Field.Label>Description</Field.Label>
+            <Textarea
+              placeholder="Description"
+              value={gameToEdit?.description}
+              autoresize
+              name="description"
+              onChange={onChangeHandler}
+            />
+          </Field.Root>
+          <Flex gap={2}>
+            <Field.Root>
+              <Field.Label>Price</Field.Label>
+              <Input
+                placeholder="Price"
+                type="number"
+                value={gameToEdit?.price}
+                name="price"
+                onChange={onChangeHandler}
+              />
+            </Field.Root>
+            <Field.Root>
+              <Field.Label>Discount Percentage</Field.Label>
+              <Input
+                placeholder="Discount Percentage"
+                type="number"
+                value={gameToEdit?.discountPercentage ?? ""}
+                name="discountPercentage"
+                onChange={onChangeHandler}
+              />
+            </Field.Root>
+          </Flex>
+          <Flex gap={2}>
+            <Field.Root>
+              <Field.Label>Stock</Field.Label>
+              <Input
+                placeholder="Stock"
+                type="number"
+                value={gameToEdit?.stock}
+                name="stock"
+                onChange={onChangeHandler}
+              />
+            </Field.Root>
+            <Field.Root>
+              <Field.Label>Platform</Field.Label>
+              <Input
+                placeholder="Platform"
+                value={gameToEdit?.platform}
+                name="platform"
+                onChange={onChangeHandler}
+              />
+            </Field.Root>
+          </Flex>
+          <MultiSelectCombobox
+            label="Genres"
+            items={genreItems as string[]}
+            placeholder="Select genres"
+            emptyMessage="No genres found"
+            onSelectionChange={(selectedItems) => {
+              onChangeGenresHandler(selectedItems);
+            }}
+            defaultSelectedItems={
+              gameToEdit?.genres.map((genre) => genre.title) || []
+            }
           />
-        </Field.Root>
-        <Field.Root>
-          <Field.Label>Description</Field.Label>
-          <Textarea
-            placeholder="Description"
-            value={gameToEdit?.description}
-            autoresize
-            name="description"
-            onChange={onChangeHandler}
-          />
-        </Field.Root>
-        <Flex gap={2}>
-          <Field.Root>
-            <Field.Label>Price</Field.Label>
-            <Input
-              placeholder="Price"
-              type="number"
-              value={gameToEdit?.price}
-              name="price"
-              onChange={onChangeHandler}
-            />
-          </Field.Root>
-          <Field.Root>
-            <Field.Label>Discount Percentage</Field.Label>
-            <Input
-              placeholder="Discount Percentage"
-              type="number"
-              value={gameToEdit?.discountPercentage ?? ""}
-              name="discountPercentage"
-              onChange={onChangeHandler}
-            />
-          </Field.Root>
-        </Flex>
-        <Flex gap={2}>
-          <Field.Root>
-            <Field.Label>Stock</Field.Label>
-            <Input
-              placeholder="Stock"
-              type="number"
-              value={gameToEdit?.stock}
-              name="stock"
-              onChange={onChangeHandler}
-            />
-          </Field.Root>
-          <Field.Root>
-            <Field.Label>Platform</Field.Label>
-            <Input
-              placeholder="Platform"
-              value={gameToEdit?.platform}
-              name="platform"
-              onChange={onChangeHandler}
-            />
-          </Field.Root>
-        </Flex>
-        <MultiSelectCombobox
-          label="Genres"
-          items={genreItems as string[]}
-          placeholder="Select genres"
-          emptyMessage="No genres found"
-          onSelectionChange={(selectedItems) => {
-            console.log("Selected genres:", selectedItems);
-          }}
-          defaultSelectedItems={
-            gameToEdit?.genres.map((genre) => genre.title) || []
-          }
-        />
-        <Flex gap={2}>
-          <FileUpload.Root accept={["image/*"]} maxFiles={1}>
+          <Flex gap={2}>
+            <FileUpload.Root
+              accept={["image/*"]}
+              maxFiles={1}
+              onChange={onChangeThumbnailHandler}
+            >
+              <FileUpload.HiddenInput />
+              <FileUpload.Label>Thumbnail</FileUpload.Label>
+              <FileUpload.Trigger asChild>
+                <Button variant="outline" size="sm">
+                  <UploadIcon /> Upload file
+                </Button>
+              </FileUpload.Trigger>
+              <FileUpload.List />
+            </FileUpload.Root>
+            <FileUpload.Root
+              maxFiles={5}
+              accept={["image/*"]}
+              onChange={onChangeImagesHandler}
+            >
+              <FileUpload.HiddenInput />
+              <FileUpload.Label>Images</FileUpload.Label>
+              <FileUpload.Trigger asChild>
+                <Button variant="outline" size="sm">
+                  <UploadIcon /> Upload file
+                </Button>
+              </FileUpload.Trigger>
+              <FileUpload.List showSize clearable />
+            </FileUpload.Root>
+          </Flex>
+          <FileUpload.Root
+            accept={["video/*"]}
+            maxFiles={1}
+            onChange={onChangeVideoHandler}
+          >
             <FileUpload.HiddenInput />
-            <FileUpload.Label>Thumbnail</FileUpload.Label>
+            <FileUpload.Label>Video Trailer</FileUpload.Label>
             <FileUpload.Trigger asChild>
               <Button variant="outline" size="sm">
                 <UploadIcon /> Upload file
@@ -380,27 +579,7 @@ const DashboardGamesTable = () => {
             </FileUpload.Trigger>
             <FileUpload.List />
           </FileUpload.Root>
-          <FileUpload.Root maxFiles={5} accept={["image/*"]}>
-            <FileUpload.HiddenInput />
-            <FileUpload.Label>Images</FileUpload.Label>
-            <FileUpload.Trigger asChild>
-              <Button variant="outline" size="sm">
-                <UploadIcon /> Upload file
-              </Button>
-            </FileUpload.Trigger>
-            <FileUpload.List showSize clearable />
-          </FileUpload.Root>
-        </Flex>
-        <FileUpload.Root accept={["video/*"]} maxFiles={1}>
-          <FileUpload.HiddenInput />
-          <FileUpload.Label>Video Trailer</FileUpload.Label>
-          <FileUpload.Trigger asChild>
-            <Button variant="outline" size="sm">
-              <UploadIcon /> Upload file
-            </Button>
-          </FileUpload.Trigger>
-          <FileUpload.List />
-        </FileUpload.Root>
+        </form>
       </CustomModal>
     </>
   );
