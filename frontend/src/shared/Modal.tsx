@@ -10,6 +10,7 @@ interface CustomModalProps {
   confirmText?: string;
   isLoading?: boolean;
   children?: React.ReactNode;
+  onClick?: (e: React.FormEvent<HTMLFormElement>) => void;
 }
 
 const CustomModal = ({
@@ -55,7 +56,7 @@ const CustomModal = ({
                   {cancelText}
                 </Button>
               </Dialog.ActionTrigger>
-              <Button loading={isLoading} type="submit">
+              <Button loading={isLoading} type="submit" form="game-update-form">
                 {confirmText}
               </Button>
             </Dialog.Footer>
