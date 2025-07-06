@@ -79,8 +79,8 @@ const MultiSelectCombobox = ({
         {/* Show selected items */}
         {selectedItems.length > 0 && (
           <Wrap gap="2" mb={2}>
-            {selectedItems.map((item) => (
-              <Badge key={item} colorScheme="blue">
+            {selectedItems.map((item, index) => (
+              <Badge key={item + "-" + index} colorScheme="blue">
                 {item}
               </Badge>
             ))}
