@@ -37,6 +37,7 @@ import { toaster } from "./ui/toaster";
 import CustomModal from "../shared/Modal";
 import { useGetGenresQuery } from "../app/services/genres";
 import MultiSelectCombobox from "../shared/MultiSelectCombobox";
+import { token } from "../constant";
 
 const DashboardGamesTable = () => {
   const { open, onOpen, onClose } = useDisclosure();
@@ -95,12 +96,18 @@ const DashboardGamesTable = () => {
   const onChangeThumbnailHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && gameToEdit) {
+      console.log(
+        "Thumbnail file selected:",
+        file.name,
+        file.size,
+        file instanceof File
+      );
       setGameToEdit((prev) => {
         if (!prev) return prev;
         return {
           ...prev,
           thumbnail: file,
-        };
+        } as Game;
       });
     }
   };
@@ -108,15 +115,16 @@ const DashboardGamesTable = () => {
   const onChangeImagesHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length > 0 && gameToEdit) {
+      console.log(
+        "Images files selected:",
+        files.map((f) => `${f.name} (${f.size} bytes)`)
+      );
       setGameToEdit((prev) => {
         if (!prev) return prev;
         return {
           ...prev,
-          images: files.map((file) => ({
-            url: URL.createObjectURL(file),
-            name: file.name,
-          })),
-        };
+          images: files,
+        } as Game;
       });
     }
   };
@@ -124,86 +132,163 @@ const DashboardGamesTable = () => {
   const onChangeVideoHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && gameToEdit) {
+      console.log(
+        "Video file selected:",
+        file.name,
+        file.size,
+        file instanceof File
+      );
       setGameToEdit((prev) => {
         if (!prev) return prev;
         return {
           ...prev,
-          videoTrailer: {
-            url: URL.createObjectURL(file),
-            name: file.name,
-          },
-        };
+          videoTrailer: file,
+        } as Game;
       });
     }
   };
 
-  const onSubmitHandler = (e: React.FormEvent<HTMLFormElement>) => {
+  const uploadFile = async ({
+    file,
+    ref,
+    refId,
+    field,
+  }: {
+    file: File;
+    ref: string;
+    refId: number | string;
+    field: string;
+  }) => {
+    const formData = new FormData();
+    formData.append("files", file);
+    formData.append("ref", ref);
+    formData.append("refId", refId.toString());
+    formData.append("field", field);
+
+    // Add debug logging
+    console.log("Uploading file:", {
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      ref,
+      refId,
+      field,
+    });
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SERVER_URL}/api/upload`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error("Upload failed response:", data);
+        throw new Error(
+          data.error?.message || `Upload failed with status ${response.status}`
+        );
+      }
+
+      return data;
+    } catch (error) {
+      console.error("Upload error:", error);
+      throw error;
+    }
+  };
+
+  const onSubmitHandler = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log("Submitting game edit:", gameToEdit);
 
     if (!gameToEdit) return;
 
-    const gameData = {
-      title: gameToEdit.title,
-      description: gameToEdit.description,
-      price: gameToEdit.price,
-      discountPercentage: gameToEdit.discountPercentage,
-      stock: gameToEdit.stock,
-      platform: gameToEdit.platform,
-      genres: gameToEdit.genres.map((genre) => genre.id), // Use genre IDs
-      developer: gameToEdit.developer,
-    };
+    try {
+      // 1. First update the game data (non-file fields)
+      const gameData = {
+        title: gameToEdit.title,
+        description: gameToEdit.description,
+        price: Number(gameToEdit.price),
+        discountPercentage: Number(gameToEdit.discountPercentage) || 0,
+        stock: Number(gameToEdit.stock),
+        platform: gameToEdit.platform,
+        developer: gameToEdit.developer,
+        genres: gameToEdit.genres.map((genre) => genre.id),
+      };
 
-    // Check if we have any files to upload
-    const hasFiles =
-      gameToEdit.thumbnail instanceof File ||
-      gameToEdit.videoTrailer instanceof File ||
-      (gameToEdit.images &&
-        gameToEdit.images.some((img) => img instanceof File));
+      // Update the game data first
+      await updateGame({
+        id: gameToEdit.documentId,
+        payload: { data: gameData },
+        hasFiles: false,
+      });
 
-    if (hasFiles) {
-      // Use FormData for file uploads
-      const formData = new FormData();
-      formData.append("data", JSON.stringify(gameData));
-
-      // Handle thumbnail
+      // 2. Handle file uploads sequentially
+      // Thumbnail
       if (gameToEdit.thumbnail instanceof File) {
-        formData.append("files.thumbnail", gameToEdit.thumbnail);
-      }
-
-      // Handle video trailer
-      if (gameToEdit.videoTrailer instanceof File) {
-        formData.append("files.videoTrailer", gameToEdit.videoTrailer);
-      }
-
-      // Handle images
-      if (gameToEdit.images && Array.isArray(gameToEdit.images)) {
-        gameToEdit.images.forEach((image) => {
-          if (image instanceof File) {
-            formData.append("files.images", image);
-          }
+        await uploadFile({
+          file: gameToEdit.thumbnail,
+          ref: "api::game.game", // Replace with your content-type UID
+          refId: gameToEdit.id || "",
+          field: "thumbnail",
         });
       }
 
-      console.log("Sending FormData with files");
-      updateGame({
-        id: gameToEdit.documentId,
-        data: formData,
-        hasFiles: true,
+      // Images (multiple)
+      if (gameToEdit.images && gameToEdit.images.length > 0) {
+        const imageFiles = gameToEdit.images.filter(
+          (img) => img instanceof File
+        ) as File[];
+        for (const imageFile of imageFiles) {
+          await uploadFile({
+            file: imageFile,
+            ref: "api::game.game",
+            refId: gameToEdit.documentId || "",
+            field: "images",
+          });
+        }
+      }
+
+      // Video Trailer
+      if (gameToEdit.videoTrailer instanceof File) {
+        await uploadFile({
+          file: gameToEdit.videoTrailer,
+          ref: "api::game.game",
+          refId: gameToEdit.id || "",
+          field: "videoTrailer",
+        });
+      }
+
+      // Success handling
+      toaster.create({
+        title: "Game updated successfully",
+        type: "success",
+        duration: 3000,
+        closable: true,
       });
-    } else {
-      // Send regular JSON data without files
-      console.log("Sending JSON data without files");
-      updateGame({
-        id: gameToEdit.documentId,
-        data: gameData,
-        hasFiles: false,
+
+      modalOnClose();
+      setGameToEdit(null);
+    } catch (error) {
+      console.error("Update failed:", error);
+      toaster.create({
+        title: "Failed to update game",
+        description: error instanceof Error ? error.message : "Unknown error",
+        type: "error",
+        duration: 5000,
+        closable: true,
       });
     }
   };
 
   useEffect(() => {
     if (isUpdateSuccess) {
+      console.log("Update successful, checking response:", gamesData);
       modalOnClose();
       setGameToEdit(null);
       setClickedGameId(undefined);
@@ -216,7 +301,7 @@ const DashboardGamesTable = () => {
         });
       }, 0);
     }
-  }, [isUpdateSuccess]);
+  }, [isUpdateSuccess, gamesData]);
 
   useEffect(() => {
     if (isSuccess) {
@@ -354,7 +439,10 @@ const DashboardGamesTable = () => {
                 <Table.Cell textAlign="center" width={"120px"}>
                   <Image
                     src={`${import.meta.env.VITE_SERVER_URL}${
-                      item?.thumbnail?.url
+                      (item?.thumbnail &&
+                        !(item.thumbnail instanceof File) &&
+                        item.thumbnail.url) ||
+                      ""
                     }`}
                     alt={item.thumbnail?.name || "Game thumbnail"}
                     width={100}
@@ -400,18 +488,18 @@ const DashboardGamesTable = () => {
                       onClick={() => {
                         setGameToEdit({
                           ...item,
-                          thumbnail: { url: "", name: "" },
-                          images: [],
-                          videoTrailer: null,
-                          title: item.title || "",
-                          description: item.description || "",
-                          price: item.price || 0,
+                          thumbnail: item.thumbnail || null,
+                          images: item.images || [],
+                          videoTrailer: item.videoTrailer || null,
+                          title: item.title,
+                          description: item.description,
+                          price: item.price,
                           discountPercentage: item.discountPercentage || 0,
-                          stock: item.stock || 0,
-                          platform: item.platform || "",
-                          developer: item.developer || "",
+                          stock: item.stock,
+                          platform: item.platform,
+                          developer: item.developer,
                           genres: item.genres || [],
-                        });
+                        } as Game);
                         modalOnOpen();
                         setClickedGameId(item.documentId);
                       }}
