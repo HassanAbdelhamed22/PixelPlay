@@ -3,6 +3,7 @@ import loginSlice from "./features/loginSlice";
 import cartSlice from "./features/cartSlice";
 import { gamesApiSlice } from "./services/games";
 import { genresApiSlice } from "./services/genres";
+import networkSlice from "./features/networkSlice";
 
 // Define the root state type
 export type RootState = ReturnType<typeof store.getState>;
@@ -14,6 +15,7 @@ export const store = configureStore({
   reducer: {
     login: loginSlice,
     cart: cartSlice,
+    network: networkSlice,
     [gamesApiSlice.reducerPath]: gamesApiSlice.reducer,
     [genresApiSlice.reducerPath]: genresApiSlice.reducer,
   },
