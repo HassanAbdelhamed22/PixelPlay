@@ -1,25 +1,29 @@
 export interface Game {
   id: number;
-  documentId?: string; 
+  documentId?: string;
   title: string;
   description: string;
   price: number;
   discountPercentage: number;
-  thumbnail: {
-    formats?: {
-      thumbnail?: { url: string };
-      url?: string;
-    };
-    url?: string;
-    name: string;
-  };
-  images?: { url: string; name: string }[] | null;
+  thumbnail:
+    | {
+        id?: number; 
+        formats?: {
+          thumbnail?: { url: string };
+          url?: string;
+        };
+        url?: string;
+        name: string;
+      }
+    | File
+    | null; // Allow null
+  images: (File | { id?: number; url: string; name: string })[];
   developer: string;
   platform: string;
   rating: number;
   releaseDate: string;
   stock: number;
-  videoTrailer?: { url: string; name: string } | null;
+  videoTrailer: File | { id?: number; url: string; name: string } | null;
   genres: { id: string; title: string }[];
 }
 
