@@ -24,16 +24,16 @@ const queryClient = new QueryClient({
 });
 
 createRoot(document.getElementById("root")!).render(
-  <InternetConnectionProvider>
+  <QueryClientProvider client={queryClient}>
     <ReduxProvider store={store}>
-      <QueryClientProvider client={queryClient}>
+      <InternetConnectionProvider>
         <Router>
           <Provider>
             <AuthInitializer />
             <App />
           </Provider>
         </Router>
-      </QueryClientProvider>
+      </InternetConnectionProvider>
     </ReduxProvider>
-  </InternetConnectionProvider>
+  </QueryClientProvider>
 );
