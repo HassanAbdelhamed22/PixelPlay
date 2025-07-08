@@ -39,43 +39,17 @@ export const gamesApiSlice = createApi({
             ]
           : [{ type: "Games", id: "LIST" }],
     }),
-    updateGame: builder.mutation({
-      query: ({ id, data, hasFiles = false }) => {
-        console.log("Update mutation - hasFiles:", hasFiles);
-        console.log("Data:", data);
 
-        if (hasFiles) {
-          // For FormData with files
-          return {
-            url: `/api/games/${id}`,
-            method: "PUT",
-            body: data, // Should be FormData
-            headers: {
-              Authorization: `Bearer ${token}`,
-              // Let browser set Content-Type for FormData
-            },
-          };
-        } else {
-          // For regular JSON updates
-          return {
-            url: `/api/games/${id}`,
-            method: "PUT",
-            body: { data },
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          };
-        }
-      },
-      transformResponse: (response) => {
-        console.log("Update Game Response:", response);
-        return response;
-      },
-      async onQueryStarted(
-        { id, data, hasFiles },
-        { dispatch, queryFulfilled }
-      ) {
+    updateGame: builder.mutation({
+      query: ({ id, payload }) => ({
+        url: `/api/games/${id}`,
+        method: "PUT",
+        body: payload,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }),
+      async onQueryStarted({ id, payload }, { dispatch, queryFulfilled }) {
         const patchResult = dispatch(
           gamesApiSlice.util.updateQueryData(
             "getDashboardGames",
@@ -85,14 +59,9 @@ export const gamesApiSlice = createApi({
                 (game: Game) => game.documentId === id
               );
               if (gameIndex !== -1) {
-                // Extract the actual data from FormData or use directly
-                const updateData =
-                  hasFiles && data instanceof FormData
-                    ? JSON.parse(data.get("data") as string)
-                    : data;
                 draft.data[gameIndex] = {
                   ...draft.data[gameIndex],
-                  ...updateData,
+                  ...payload.data,
                 };
               }
             }
@@ -105,10 +74,11 @@ export const gamesApiSlice = createApi({
         }
       },
       invalidatesTags: ({ id }) => [
-        { type: "Games", id: "LIST" },
         { type: "Games", id },
+        { type: "Games", id: "LIST" },
       ],
     }),
+
     deleteGame: builder.mutation({
       query: (id) => ({
         url: `/api/games/${id}`,
