@@ -321,7 +321,7 @@ const DashboardGamesTable = () => {
     }
   }, [isSuccess]);
 
-  if (isLoading || isConnected) return <DashboardGamesTableSkeleton />;
+  if (isLoading || !isConnected) return <DashboardGamesTableSkeleton />;
 
   if (error) {
     return (

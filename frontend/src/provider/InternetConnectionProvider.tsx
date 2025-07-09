@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { toaster } from "../components/ui/toaster";
 import { useDispatch } from "react-redux";
 import { setIsConnected } from "../app/features/networkSlice";
@@ -10,7 +10,6 @@ const InternetConnectionProvider = ({
 }) => {
   const dispatch = useDispatch();
   const toastIdRef = useRef<string | null>(null);
-  const [isOnline, setIsOnline] = useState(true);
 
   function close() {
     toaster.dismiss(toastIdRef.current || "");
@@ -28,25 +27,17 @@ const InternetConnectionProvider = ({
 
   useEffect(() => {
     const handleOnline = () => {
-      setIsOnline(true);
       dispatch(setIsConnected(true));
       close();
     };
 
     const handleOffline = () => {
-      setIsOnline(false);
       dispatch(setIsConnected(false));
       addToast();
     };
 
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
-
-    // Check status on initial mount
-    if (!isOnline) {
-      setIsOnline(false);
-      addToast();
-    }
 
     return () => {
       window.removeEventListener("online", handleOnline);
