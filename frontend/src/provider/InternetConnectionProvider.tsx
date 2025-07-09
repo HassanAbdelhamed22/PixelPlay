@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { toaster } from "../components/ui/toaster";
+import { useDispatch } from "react-redux";
+import { setIsConnected } from "../app/features/networkSlice";
 
 const InternetConnectionProvider = ({
   children,
 }: {
   children: React.ReactNode;
 }) => {
+  const dispatch = useDispatch();
   const toastIdRef = useRef<string | null>(null);
   const [isOnline, setIsOnline] = useState(true);
 
@@ -26,11 +29,13 @@ const InternetConnectionProvider = ({
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
+      dispatch(setIsConnected(true));
       close();
     };
 
     const handleOffline = () => {
       setIsOnline(false);
+      dispatch(setIsConnected(false));
       addToast();
     };
 
