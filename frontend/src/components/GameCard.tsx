@@ -186,7 +186,7 @@ const GameCard: React.FC<GameCardProps> = ({ game, size = "medium" }) => {
       >
         <Box position="relative">
           <Image
-            src={`${import.meta.env.VITE_SERVER_URL}${game?.thumbnail?.url}`}
+            src={game.thumbnail.formats?.large?.url || game.thumbnail.url}
             alt={game.thumbnail.name}
             h={heights[size]}
             w="100%"

@@ -323,7 +323,7 @@ const GameDetails = () => {
 
   // Combine thumbnail and images into displayImages, starting with thumbnail
   const displayImages: { url: string; name: string }[] = [
-    { url: data.thumbnail.url, name: data.thumbnail.name },
+    { url: data.thumbnail.formats?.large?.url, name: data.thumbnail.name },
     ...(data.images || []).map((img: any) => ({
       url: img.url,
       name: img.name || "Image",
@@ -385,9 +385,7 @@ const GameDetails = () => {
             {/* Main Image */}
             <Box position="relative" borderRadius="xl" overflow="hidden" mb={4}>
               <Image
-                src={`${import.meta.env.VITE_SERVER_URL}${
-                  displayImages[selectedImage]?.url
-                }`}
+                src={displayImages[selectedImage].url || data.thumbnail?.url}
                 alt={displayImages[selectedImage]?.name || data.title}
                 w="100%"
                 h="400px"
@@ -426,7 +424,7 @@ const GameDetails = () => {
                       onClick={() => setSelectedImage(index)}
                     >
                       <Image
-                        src={`${import.meta.env.VITE_SERVER_URL}${image.url}`}
+                        src={image.url}
                         alt={image.name}
                         w="100%"
                         h="80px"
@@ -513,7 +511,7 @@ const GameDetails = () => {
                     </Text>
                   </Tabs.Content>
                   <Tabs.Content value="trailer">
-                    {data.videoTrailer?.url ? (
+                    {data.videoTrailer && "url" in data.videoTrailer ? (
                       <AspectRatio
                         ratio={16 / 9}
                         maxW="100%"
@@ -522,9 +520,7 @@ const GameDetails = () => {
                       >
                         <video
                           controls
-                          src={`${import.meta.env.VITE_SERVER_URL}${
-                            data.videoTrailer.url
-                          }`}
+                          src={data.videoTrailer.url}
                           title={data.videoTrailer.name || "Game Trailer"}
                         >
                           Your browser does not support the video tag.
@@ -566,13 +562,14 @@ const GameDetails = () => {
                           key={game.id}
                           p={1}
                           w="full"
-                          onClick={() => navigate(`/game/${game.id}`)}
+                          onClick={() => navigate(`/game/${game.documentId}`)}
                           cursor="pointer"
                         >
                           <Image
-                            src={`${import.meta.env.VITE_SERVER_URL}${
+                            src={
+                              game.thumbnail.formats?.medium?.url ||
                               game.thumbnail.url
-                            }`}
+                            }
                             alt={game.title}
                             w="100%"
                             h="120px"

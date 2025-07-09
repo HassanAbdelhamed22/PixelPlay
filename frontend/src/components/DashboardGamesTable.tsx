@@ -18,6 +18,7 @@ import {
 } from "@chakra-ui/react";
 import DashboardGamesTableSkeleton from "./DashboardGamesTableSkeleton";
 import {
+  gamesApiSlice,
   useDeleteGameMutation,
   useGetDashboardGamesQuery,
   useUpdateGameMutation,
@@ -63,9 +64,9 @@ const DashboardGamesTable = () => {
     isLoading: isGenresLoading,
     error: genresError,
   } = useGetGenresQuery({});
-  const [clickedGameId, setClickedGameId] = useState<string | undefined>(
-    undefined
-  );
+  const [clickedGameId, setClickedGameId] = useState<
+    string | number | undefined
+  >(undefined);
   const [gameToEdit, setGameToEdit] = useState<Game | null>(null);
 
   const onChangeHandler = (
@@ -84,7 +85,6 @@ const DashboardGamesTable = () => {
   const onChangeGenresHandler = (selectedItems: string[]) => {
     setGameToEdit((prev) => {
       if (!prev) return prev;
-      // Find the full genre objects from the genres list
       const selectedGenres =
         (genres?.data || [])
           .filter((genre: Genre) => selectedItems.includes(genre.title))
@@ -99,6 +99,26 @@ const DashboardGamesTable = () => {
   const onChangeThumbnailHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && gameToEdit) {
+      if (!file.type.startsWith("image/")) {
+        toaster.create({
+          title: "Invalid file type",
+          description: "Please upload an image file.",
+          type: "error",
+          duration: 5000,
+          closable: true,
+        });
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toaster.create({
+          title: "File too large",
+          description: "Image must be smaller than 5MB.",
+          type: "error",
+          duration: 5000,
+          closable: true,
+        });
+        return;
+      }
       console.log(
         "Thumbnail file selected:",
         file.name,
@@ -118,6 +138,19 @@ const DashboardGamesTable = () => {
   const onChangeImagesHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length > 0 && gameToEdit) {
+      const invalidFiles = files.filter(
+        (file) => !file.type.startsWith("image/") || file.size > 5 * 1024 * 1024
+      );
+      if (invalidFiles.length > 0) {
+        toaster.create({
+          title: "Invalid files",
+          description: "All files must be images smaller than 5MB.",
+          type: "error",
+          duration: 5000,
+          closable: true,
+        });
+        return;
+      }
       console.log(
         "Images files selected:",
         files.map((f) => `${f.name} (${f.size} bytes)`)
@@ -135,6 +168,26 @@ const DashboardGamesTable = () => {
   const onChangeVideoHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && gameToEdit) {
+      if (!file.type.startsWith("video/")) {
+        toaster.create({
+          title: "Invalid file type",
+          description: "Please upload a video file.",
+          type: "error",
+          duration: 5000,
+          closable: true,
+        });
+        return;
+      }
+      if (file.size > 50 * 1024 * 1024) {
+        toaster.create({
+          title: "File too large",
+          description: "Video must be smaller than 50MB.",
+          type: "error",
+          duration: 5000,
+          closable: true,
+        });
+        return;
+      }
       console.log(
         "Video file selected:",
         file.name,
@@ -159,7 +212,7 @@ const DashboardGamesTable = () => {
   }: {
     file: File;
     ref: string;
-    refId: number | string;
+    refId: string | number;
     field: string;
   }) => {
     const formData = new FormData();
@@ -168,7 +221,6 @@ const DashboardGamesTable = () => {
     formData.append("refId", refId.toString());
     formData.append("field", field);
 
-    // Add debug logging
     console.log("Uploading file:", {
       name: file.name,
       size: file.size,
@@ -189,99 +241,171 @@ const DashboardGamesTable = () => {
           body: formData,
         }
       );
-
-      const data = await response.json();
-
+      console.log("Upload response status:", response.status, "for", file.name);
       if (!response.ok) {
-        console.error("Upload failed response:", data);
-        throw new Error(
-          data.error?.message || `Upload failed with status ${response.status}`
-        );
+        console.error("Upload failed with status:", response.status);
       }
-
-      return data;
-    } catch (error) {
-      console.error("Upload error:", error);
-      throw error;
+      return response.ok; // Return true if successful, false otherwise
+    } catch (error: any) {
+      console.error("Upload error for", file.name, ":", error.message);
+      return false; // Indicate failure
     }
   };
 
   const onSubmitHandler = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (!gameToEdit) return;
+    if (!gameToEdit || !gameToEdit.documentId) return;
 
     try {
-      // 1. First update the game data (non-file fields)
       const gameData = {
-        title: gameToEdit.title,
-        description: gameToEdit.description,
-        price: Number(gameToEdit.price),
+        title: gameToEdit.title || "",
+        description: gameToEdit.description || "",
+        price: Number(gameToEdit.price) || 0,
         discountPercentage: Number(gameToEdit.discountPercentage) || 0,
-        stock: Number(gameToEdit.stock),
-        platform: gameToEdit.platform,
-        developer: gameToEdit.developer,
-        genres: gameToEdit.genres.map((genre) => genre.id),
+        stock: Number(gameToEdit.stock) || 0,
+        platform: gameToEdit.platform || "",
+        developer: gameToEdit.developer || "",
+        genres: gameToEdit.genres
+          ? gameToEdit.genres.map((genre) => genre.id)
+          : [],
+
+        // Preserve existing thumbnail ID if no new thumbnail is uploaded
+        thumbnail:
+          gameToEdit.thumbnail instanceof File
+            ? undefined
+            : gameToEdit.thumbnail?.id,
+
+        // // Preserve existing video trailer ID if no new video trailer is uploaded
+        // videoTrailer:
+        //   gameToEdit.videoTrailer instanceof File
+        //     ? undefined
+        //     : gameToEdit.videoTrailer?.id,
       };
 
-      // Update the game data first
-      await updateGame({
+      // Update game data first and wait for response
+      const updateResponse = await updateGame({
         id: gameToEdit.documentId,
         payload: { data: gameData },
-        hasFiles: false,
-      });
+        hasFiles:
+          gameToEdit.thumbnail instanceof File ||
+          (gameToEdit.images?.length ?? 0) > 0 ||
+          gameToEdit.videoTrailer instanceof File,
+      }).unwrap(); // Use .unwrap() to get the actual response
 
-      // 2. Handle file uploads sequentially
-      // Thumbnail
-      if (gameToEdit.thumbnail instanceof File) {
-        await uploadFile({
-          file: gameToEdit.thumbnail,
-          ref: "api::game.game", // Replace with your content-type UID
-          refId: gameToEdit.id || "",
-          field: "thumbnail",
-        });
+      console.log("Update response:", updateResponse);
+
+      // Get the new game ID from the response
+      const newGameId = updateResponse?.data?.id || updateResponse?.id;
+
+      if (!newGameId) {
+        throw new Error("No game ID returned from update");
       }
 
-      // Images (multiple)
+      console.log("Using new game ID for file uploads:", newGameId);
+
+      // Collect all upload promises
+      const uploadPromises = [];
+      if (gameToEdit.thumbnail instanceof File) {
+        uploadPromises.push(
+          uploadFile({
+            file: gameToEdit.thumbnail,
+            ref: "api::game.game",
+            refId: newGameId,
+            field: "thumbnail",
+          })
+        );
+      }
       if (gameToEdit.images && gameToEdit.images.length > 0) {
         const imageFiles = gameToEdit.images.filter(
           (img) => img instanceof File
         ) as File[];
-        for (const imageFile of imageFiles) {
-          await uploadFile({
-            file: imageFile,
+        imageFiles.forEach((imageFile) => {
+          uploadPromises.push(
+            uploadFile({
+              file: imageFile,
+              ref: "api::game.game",
+              refId: newGameId,
+              field: "images",
+            })
+          );
+        });
+      }
+      if (gameToEdit.videoTrailer instanceof File) {
+        uploadPromises.push(
+          uploadFile({
+            file: gameToEdit.videoTrailer,
             ref: "api::game.game",
-            refId: gameToEdit.documentId || "",
-            field: "images",
-          });
-        }
+            refId: newGameId,
+            field: "videoTrailer",
+          })
+        );
       }
 
-      // Video Trailer
-      if (gameToEdit.videoTrailer instanceof File) {
-        await uploadFile({
-          file: gameToEdit.videoTrailer,
-          ref: "api::game.game",
-          refId: gameToEdit.id || "",
-          field: "videoTrailer",
+      // Wait for all uploads to complete
+      const uploadResults = await Promise.all(uploadPromises);
+      const uploadSuccess = uploadResults.every((result) => result === true);
+
+      // Update cache with new file data
+      if (uploadSuccess) {
+        gamesApiSlice.util.updateQueryData(
+          "getDashboardGames",
+          { page: 1 },
+          (draft) => {
+            const gameIndex = draft.data.findIndex(
+              (game: Game) => game.documentId === gameToEdit.documentId
+            );
+            if (gameIndex !== -1) {
+              const updatedGame = { ...draft.data[gameIndex] };
+              if (gameToEdit.thumbnail instanceof File) {
+                updatedGame.thumbnail = {
+                  id: newGameId,
+                  ...gameToEdit.thumbnail,
+                }; // Placeholder, adjust based on API response
+              }
+              if (gameToEdit.images && gameToEdit.images.length > 0) {
+                updatedGame.images = gameToEdit.images.map((img) => ({
+                  id: newGameId,
+                  ...img,
+                })); // Placeholder
+              }
+              if (gameToEdit.videoTrailer instanceof File) {
+                updatedGame.videoTrailer = {
+                  id: newGameId,
+                  ...gameToEdit.videoTrailer,
+                }; // Placeholder
+              }
+              draft.data[gameIndex] = updatedGame;
+            }
+          }
+        );
+      }
+
+      if (uploadSuccess) {
+        toaster.create({
+          title: "Game and files updated successfully",
+          type: "success",
+          duration: 3000,
+          closable: true,
+        });
+      } else {
+        toaster.create({
+          title: "Game updated, but file upload failed",
+          description: "Some files may not be linked. Check server logs.",
+          type: "warning",
+          duration: 5000,
+          closable: true,
         });
       }
 
-      // Success handling
-      toaster.create({
-        title: "Game updated successfully",
-        type: "success",
-        duration: 3000,
-        closable: true,
-      });
-
       modalOnClose();
       setGameToEdit(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Update failed:", error);
       toaster.create({
         title: "Failed to update game",
-        description: error instanceof Error ? error.message : "Unknown error",
+        description:
+          error.message || "An error occurred while updating the game.",
         type: "error",
         duration: 5000,
         closable: true,
@@ -291,7 +415,6 @@ const DashboardGamesTable = () => {
 
   useEffect(() => {
     if (isUpdateSuccess) {
-      console.log("Update successful, checking response:", gamesData);
       modalOnClose();
       setGameToEdit(null);
       setClickedGameId(undefined);
@@ -304,7 +427,7 @@ const DashboardGamesTable = () => {
         });
       }, 0);
     }
-  }, [isUpdateSuccess, gamesData]);
+  }, [isUpdateSuccess]);
 
   useEffect(() => {
     if (isSuccess) {
@@ -354,15 +477,21 @@ const DashboardGamesTable = () => {
 
   console.log("Games gamesData:", gamesData.data);
 
-  // Use all genres from the genres API, not just those assigned to games
   const genreItems = Array.from(
     new Set(
       (genres?.data || []).map((genre: Genre) => genre.title).filter(Boolean)
     )
   );
 
-  console.log("Genre Items:", genreItems);
-  // Handle genres loading and error states
+  if (gameToEdit) {
+    console.log("Using documentId:", gameToEdit.documentId);
+    console.log("Using id for file upload:", gameToEdit.id);
+    console.log(
+      "Are they the same?",
+      gameToEdit.documentId === gameToEdit.id.toString()
+    );
+  }
+
   if (isGenresLoading) {
     return <Box p={6}>Loading genres...</Box>;
   }
@@ -441,25 +570,19 @@ const DashboardGamesTable = () => {
                 </Table.Cell>
                 <Table.Cell textAlign="center" width={"120px"}>
                   <Image
-                    src={`${import.meta.env.VITE_SERVER_URL}${
-                      (item?.thumbnail &&
-                        !(item.thumbnail instanceof File) &&
-                        item.thumbnail.url) ||
-                      ""
-                    }`}
-                    alt={item.thumbnail?.name || "Game thumbnail"}
-                    width={100}
-                    height={100}
-                    objectFit="fill"
+                    src={
+                      item.thumbnail.formats?.medium?.url || item.thumbnail?.url
+                    }
+                    alt={item.thumbnail?.name || "Game Thumbnail"}
+                    objectFit="cover"
                     boxShadow="md"
-                    maxHeight="100px"
-                    maxWidth="100px"
                     objectPosition="center"
                     border="1px solid var(--dark-700)"
                     borderRadius="md"
                     _hover={{ transform: "scale(1.1)" }}
                     transition="transform 0.3s"
                     loading="lazy"
+                    boxSize={"120px"}
                   />
                 </Table.Cell>
                 <Table.Cell textAlign="center">{item.platform}</Table.Cell>
@@ -494,14 +617,15 @@ const DashboardGamesTable = () => {
                           thumbnail: item.thumbnail || null,
                           images: item.images || [],
                           videoTrailer: item.videoTrailer || null,
-                          title: item.title,
-                          description: item.description,
-                          price: item.price,
+                          title: item.title || "",
+                          description: item.description || "",
+                          price: item.price || 0,
                           discountPercentage: item.discountPercentage || 0,
-                          stock: item.stock,
-                          platform: item.platform,
-                          developer: item.developer,
+                          stock: item.stock || 0,
+                          platform: item.platform || "",
+                          developer: item.developer || "",
                           genres: item.genres || [],
+                          documentId: item.documentId,
                         } as Game);
                         modalOnOpen();
                         setClickedGameId(item.documentId);
@@ -556,7 +680,7 @@ const DashboardGamesTable = () => {
             <Field.Label>Title</Field.Label>
             <Input
               placeholder="Title"
-              value={gameToEdit?.title}
+              value={gameToEdit?.title || ""}
               name="title"
               onChange={onChangeHandler}
             />
@@ -565,7 +689,7 @@ const DashboardGamesTable = () => {
             <Field.Label>Description</Field.Label>
             <Textarea
               placeholder="Description"
-              value={gameToEdit?.description}
+              value={gameToEdit?.description || ""}
               autoresize
               name="description"
               onChange={onChangeHandler}
@@ -577,7 +701,7 @@ const DashboardGamesTable = () => {
               <Input
                 placeholder="Price"
                 type="number"
-                value={gameToEdit?.price}
+                value={gameToEdit?.price || 0}
                 name="price"
                 onChange={onChangeHandler}
               />
@@ -587,7 +711,7 @@ const DashboardGamesTable = () => {
               <Input
                 placeholder="Discount Percentage"
                 type="number"
-                value={gameToEdit?.discountPercentage ?? ""}
+                value={gameToEdit?.discountPercentage || 0}
                 name="discountPercentage"
                 onChange={onChangeHandler}
               />
@@ -599,7 +723,7 @@ const DashboardGamesTable = () => {
               <Input
                 placeholder="Stock"
                 type="number"
-                value={gameToEdit?.stock}
+                value={gameToEdit?.stock || 0}
                 name="stock"
                 onChange={onChangeHandler}
               />
@@ -608,7 +732,7 @@ const DashboardGamesTable = () => {
               <Field.Label>Platform</Field.Label>
               <Input
                 placeholder="Platform"
-                value={gameToEdit?.platform}
+                value={gameToEdit?.platform || ""}
                 name="platform"
                 onChange={onChangeHandler}
               />

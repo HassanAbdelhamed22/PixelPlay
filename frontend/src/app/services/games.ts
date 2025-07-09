@@ -21,7 +21,7 @@ export const gamesApiSlice = createApi({
       query: (arg) => {
         const { page } = arg;
         return {
-          url: `/api/games?populate[thumbnail]=true&populate[images]=true&populate[genres]=true&pagination[page]=${page}&pagination[pageSize]=10`,
+          url: `/api/games?populate[thumbnail]=true&populate[images]=true&populate[genres]=true&videoTrailer=true&pagination[page]=${page}&pagination[pageSize]=10`,
         };
       },
       transformResponse: (response) => {
@@ -68,7 +68,25 @@ export const gamesApiSlice = createApi({
           )
         );
         try {
-          await queryFulfilled;
+          const { data } = await queryFulfilled;
+          // Additional cache update for file fields if needed
+          dispatch(
+            gamesApiSlice.util.updateQueryData(
+              "getDashboardGames",
+              { page: 1 },
+              (draft) => {
+                const gameIndex = draft.data.findIndex(
+                  (game: Game) => game.documentId === id
+                );
+                if (gameIndex !== -1) {
+                  draft.data[gameIndex] = {
+                    ...draft.data[gameIndex],
+                    ...data, // Update with full response if it includes file data
+                  };
+                }
+              }
+            )
+          );
         } catch {
           patchResult.undo();
         }

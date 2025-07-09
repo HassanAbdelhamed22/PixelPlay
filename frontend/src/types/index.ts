@@ -5,19 +5,18 @@ export interface Game {
   description: string;
   price: number;
   discountPercentage: number;
-  thumbnail:
-    | {
-        id?: number; 
-        formats?: {
-          thumbnail?: { url: string };
-          url?: string;
-        };
-        url?: string;
-        name: string;
-      }
-    | File
-    | null; // Allow null
-  images: (File | { id?: number; url: string; name: string })[];
+  thumbnail: {
+    id?: number;
+    formats?: {
+      large?: { url: string };
+      medium?: { url: string };
+      small?: { url: string };
+      url?: string;
+    } | null;
+    url?: string;
+    name: string;
+  };
+  images: (File | { id?: number; url: string; name: string })[] | null;
   developer: string;
   platform: string;
   rating: number;
