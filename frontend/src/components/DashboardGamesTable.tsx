@@ -38,8 +38,11 @@ import CustomModal from "../shared/Modal";
 import { useGetGenresQuery } from "../app/services/genres";
 import MultiSelectCombobox from "../shared/MultiSelectCombobox";
 import { token } from "../constant";
+import { useSelector } from "react-redux";
+import { selectNetwork } from "../app/features/networkSlice";
 
 const DashboardGamesTable = () => {
+  const { isConnected } = useSelector(selectNetwork);
   const { open, onOpen, onClose } = useDisclosure();
   const {
     open: modalOpen,
@@ -318,7 +321,7 @@ const DashboardGamesTable = () => {
     }
   }, [isSuccess]);
 
-  if (isLoading) return <DashboardGamesTableSkeleton />;
+  if (isLoading || isConnected) return <DashboardGamesTableSkeleton />;
 
   if (error) {
     return (
